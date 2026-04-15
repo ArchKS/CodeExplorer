@@ -72,6 +72,10 @@ Date: 2026.04.15
             background: #f8fafc;
         }
 
+        tbody tr.bg-red-50:hover {
+            background: #fee2e2 !important;
+        }
+
         .batch-input {
             border-radius: 12px;
             letter-spacing: 0.5px;
@@ -88,7 +92,7 @@ Date: 2026.04.15
 </head>
 
 <body class="py-10 px-4">
-    <div class="max-w-5xl mx-auto">
+    <div class="mx-auto">
         <div class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800 tracking-wide">期权价值计算器</h1>
             <p class="text-gray-500 mt-2">Black-Scholes 模型 · 专业计算</p>
@@ -97,11 +101,10 @@ Date: 2026.04.15
         <div class="card p-6 md:p-8 mb-8">
             <!-- 批量输入 -->
             <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">一键批量输入</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">格式：标的价格,行权价格,到期天数/到期日,无风险利率,波动率</label>
                 <input type="text" id="batchInput"
-                    placeholder="示例：示例：168660,180000,51,4,57.24 或 168660,180000,2026.06.05,4,57.24 （格式：标的价格,行权价格,到期天数/到期日,无风险利率,波动率）"
                     class="w-full px-4 py-3 border border-gray-300 input-box batch-input"
-                    value="168660,180000,2026/06/05,4,57.24">
+                    value="20,18,20,4,57.24">
                 <div class="flex gap-3 mt-3">
                     <button id="parseBtn" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm">
                         <i class="fa fa-magic mr-1"></i> 解析并填充
@@ -109,39 +112,30 @@ Date: 2026.04.15
                     <button id="clearBtn" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">
                         <i class="fa fa-trash mr-1"></i> 清空
                     </button>
+
+                    <button id="callBtn"
+                        class="px-4 py-2 rounded-xl font-medium text-gray-700 btn-light">看涨期权</button>
+                    <button id="putBtn" class="px-4 py-2 rounded-xl font-medium text-gray-700 btn-light">看跌期权</button>
+                    <!-- 计算 -->
+                    <button id="calc" class="px-16 py-2 btn-primary text-white rounded-xl font-medium  btn-primary">
+                        <i class="fa fa-calculator mr-1"></i> 计 算
+                    </button>
                 </div>
             </div>
 
-            <!-- 期权类型 -->
-            <div class="flex gap-4 mb-7">
-                <button id="callBtn" class="flex-1 py-3 rounded-xl font-medium text-white btn-primary">看涨期权</button>
-                <button id="putBtn" class="flex-1 py-3 rounded-xl font-medium text-gray-700 btn-light">看跌期权</button>
-            </div>
 
             <!-- 输入区 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-7">
+            <div class="grid grid-cols-2 md:grid-cols-7 gap-5 mb-7">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">标的价格 (S)</label>
-                    <input type="number" id="stockPrice" step="0.01" min="0" value=""
+                    <input type="number" id="stockPrice" step="1" min="0" value=""
                         class="w-full px-4 py-3 border border-gray-300 input-box">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">行权价格 (K)</label>
-                    <input type="number" id="strikePrice" step="0.01" min="0" value=""
+                    <input type="number" id="strikePrice" step="1" min="0" value=""
                         class="w-full px-4 py-3 border border-gray-300 input-box">
                 </div>
-                <!-- <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">剩余到期天数</label>
-                    <input type="number" id="days" step="1" min="1" value=""
-                        class="w-full px-4 py-3 border border-gray-300 input-box">
-                </div> -->
-                <!-- <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">到期天数 / 到期日期</label>
-                    <input type="text" id="days" value="" placeholder="例如：51 或 2026.06.05"
-                        class="w-full px-4 py-3 border border-gray-300 input-box">
-                    <p class="text-xs text-gray-400 mt-1">支持输入剩余天数，或日期：2026.06.05 / 2026-06-05 / 2026/06/05</p>
-                </div> -->
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">到期天数</label>
                     <input type="number" id="days" step="1" min="0" value="" placeholder="例如：51"
@@ -158,27 +152,36 @@ Date: 2026.04.15
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">无风险利率 (%)</label>
-                    <input type="number" id="rate" step="0.01" min="0" value=""
+                    <input type="number" id="rate" step="1" min="0" value=""
                         class="w-full px-4 py-3 border border-gray-300 input-box">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">波动率 (%)</label>
-                    <input type="number" id="vol" step="0.01" min="0.1" value=""
+                    <input type="number" id="vol" step="1" min="1" value=""
                         class="w-full px-4 py-3 border border-gray-300 input-box">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">当前成本 (可选)</label>
+                    <input type="number" id="costPrice" step="1" min="0" value="" placeholder="购入价格"
+                        class="w-full px-4 py-3 border border-gray-300 input-box bg-blue-50">
                 </div>
             </div>
 
-            <!-- 计算 -->
-            <button id="calc" class="w-full py-3 btn-primary text-white rounded-xl font-medium mb-7">
-                <i class="fa fa-calculator mr-1"></i> 计 算
-            </button>
 
             <!-- 结果 -->
             <div class="bg-gray-50 p-5 rounded-xl mb-7">
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                     <div>
                         <p class="text-sm text-gray-500">理论价格</p>
                         <p id="price" class="text-xl font-bold text-indigo-600">0.0000</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">持仓盈亏</p>
+                        <p id="profitLoss" class="text-xl font-bold text-gray-400">--</p>
+                    </div>
+                    <div class="border-r border-gray-200 pr-4">
+                        <p class="text-sm text-gray-500">收益率</p>
+                        <p id="roi" class="text-lg font-medium text-gray-400">--</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Delta</p>
@@ -203,16 +206,33 @@ Date: 2026.04.15
                 </div>
             </div>
 
-            <!-- 图表1：期权价值 -->
-            <div class="h-[420px] mb-7">
-                <canvas id="valueChart"></canvas>
-            </div>
+            <div class="flex flex-col md:flex-row gap-4 mb-7">
+                <!-- 图表1：期权价值 -->
+                <div class="relative flex-1 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <div class="absolute top-2 right-2 z-10">
+                        <button onclick="downloadChart('valueChart', '期权价值')" 
+                            class="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all" title="下载图表">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="h-[400px]">
+                        <canvas id="valueChart"></canvas>
+                    </div>
+                </div>
 
-            <!-- 图表2：环比变化幅度 -->
-            <div class="h-[420px] mb-7">
-                <canvas id="pctChart"></canvas>
+                <!-- 图表2：环比变化幅度 -->
+                <div class="relative flex-1 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    <div class="absolute top-2 right-2 z-10">
+                        <button onclick="downloadChart('pctChart', '环比变化幅度')" 
+                            class="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all" title="下载图表">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="h-[400px]">
+                        <canvas id="pctChart"></canvas>
+                    </div>
+                </div>
             </div>
-
             <!-- 表格 -->
             <div>
                 <h3 class="text-lg font-semibold mb-3">每日期权价值明细</h3>
@@ -220,9 +240,11 @@ Date: 2026.04.15
                     <table class="w-full text-sm text-left">
                         <thead class="sticky top-0">
                             <tr>
+                                <th class="px-4 py-3 border-b font-medium">日期</th>
                                 <th class="px-4 py-3 border-b font-medium">剩余天数</th>
                                 <th class="px-4 py-3 border-b font-medium">期权价值</th>
                                 <th class="px-4 py-3 border-b font-medium">环比变化</th>
+                                <th class="px-4 py-3 border-b font-medium">累计变化</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody" class="divide-y divide-gray-200"></tbody>
@@ -299,6 +321,7 @@ Date: 2026.04.15
         document.getElementById('strikePrice').addEventListener('input', calc);
         document.getElementById('rate').addEventListener('input', calc);
         document.getElementById('vol').addEventListener('input', calc);
+        document.getElementById('costPrice').addEventListener('input', calc);
 
         document.getElementById('days').addEventListener('input', () => {
             syncFromDays();
@@ -432,6 +455,14 @@ Date: 2026.04.15
             return `${y}.${m}.${d}`;
         }
 
+        function formatDisplayDate(dt) {
+            const now = new Date();
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const d = String(dt.getDate()).padStart(2, '0');
+            return y === now.getFullYear() ? `${m}.${d}` : `${y}.${m}.${d}`;
+        }
+
         function addDays(baseDate, days) {
             const dt = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
             dt.setDate(dt.getDate() + Math.round(Number(days || 0)));
@@ -522,10 +553,15 @@ Date: 2026.04.15
         // 生成数据
         function generateData(S, K, daysTotal, r, s, type) {
             const labels = [], values = [], pctChanges = [];
+            const today = getTodayStart();
             for (let d = daysTotal; d >= 0; d--) {
                 const T = d / 365;
                 const val = bs(S, K, T, r / 100, s / 100, type).price;
-                labels.push(d + '天');
+                
+                const daysPassed = daysTotal - d;
+                const currentDate = addDays(today, daysPassed);
+                labels.push(formatDisplayDate(currentDate));
+                
                 values.push(val);
             }
 
@@ -834,9 +870,9 @@ Date: 2026.04.15
                             flagX = p1.x + (p2.x - p1.x) * crossingInfo.t;
                         }
 
-                        flagX -=12;
+                        flagX -= 12;
 
-                        console.log({flagX});
+                        console.log({ flagX });
                         if (flagX == null) return;
 
                         const totalDays = getResolvedDays();
@@ -847,7 +883,7 @@ Date: 2026.04.15
 
                         if (startDate) {
                             const hitDate = addDays(startDate, crossingInfo.daysFromStart);
-                            daysText = `距起点 ${crossingInfo.daysFromStart.toFixed(1)} 天（${formatDate(hitDate)}）`;
+                            daysText = `距起点 ${crossingInfo.daysFromStart.toFixed(1)} 天（${formatDisplayDate(hitDate)}）`;
                         }
 
                         // const totalDays = parseFloat(labels[0]);
@@ -928,7 +964,7 @@ Date: 2026.04.15
                     data: {
                         labels,
                         datasets: [{
-                            label: '环比变化幅度(以-5%为界)',
+                            label: '环比变化幅度（%）',
                             data,
                             borderColor: 'blue',
                             borderWidth: 3,
@@ -987,18 +1023,42 @@ Date: 2026.04.15
         function renderTable(labels, values, pctChanges) {
             const tb = document.getElementById('tableBody');
             tb.innerHTML = '';
+            const total = values.length - 1;
+            const firstValue = values[0]; // 基准值
+
             for (let i = 0; i < labels.length; i++) {
                 const tr = document.createElement('tr');
+                const remainDays = total - i;
+                
+                // 环比
                 let changeText = '-';
-                let color = 'text-gray-600';
+                let changeColor = 'text-gray-600';
                 if (i > 0) {
-                    changeText = pctChanges[i].toFixed(2) + '%';
-                    color = pctChanges[i] >= 0 ? 'text-green-600' : 'text-red-600';
+                    const pct = pctChanges[i];
+                    changeText = pct.toFixed(2) + '%';
+                    changeColor = pct >= 0 ? 'text-green-600' : 'text-red-600';
+                    
+                    // 如果环比变动小于 -5%，将整行背景设为浅红色
+                    if (pct < -5) {
+                        tr.classList.add('bg-red-50');
+                    }
                 }
+
+                // 累计 (以第一天为基准)
+                let cumText = '-';
+                let cumColor = 'text-gray-600';
+                if (i > 0 && firstValue !== 0) {
+                    const cumPct = (values[i] - firstValue) / firstValue * 100;
+                    cumText = cumPct.toFixed(2) + '%';
+                    cumColor = cumPct >= 0 ? 'text-green-600' : 'text-red-600';
+                }
+
                 tr.innerHTML = `
-                <td class="px-4 py-2.5">${labels[i]}</td>
+                <td class="px-4 py-2.5 text-gray-500">${labels[i]}</td>
+                <td class="px-4 py-2.5">${remainDays}天</td>
                 <td class="px-4 py-2.5 font-medium">${values[i].toFixed(4)}</td>
-                <td class="px-4 py-2.5 font-medium ${color}">${changeText}</td>
+                <td class="px-4 py-2.5 font-medium ${changeColor}">${changeText}</td>
+                <td class="px-4 py-2.5 font-medium ${cumColor}">${cumText}</td>
             `;
                 tb.appendChild(tr);
             }
@@ -1022,6 +1082,25 @@ Date: 2026.04.15
             document.getElementById('vega').textContent = res.vega.toFixed(4);
             document.getElementById('rho').textContent = res.rho.toFixed(4);
 
+            // 计算盈亏
+            const cost = parseFloat(document.getElementById('costPrice').value);
+            const plEl = document.getElementById('profitLoss');
+            const roiEl = document.getElementById('roi');
+
+            if (!isNaN(cost) && cost > 0) {
+                const diff = res.price - cost;
+                const roi = (diff / cost) * 100;
+                plEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(4);
+                plEl.className = `text-xl font-bold ${diff >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                roiEl.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(2) + '%';
+                roiEl.className = `text-lg font-medium ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`;
+            } else {
+                plEl.textContent = '--';
+                plEl.className = 'text-xl font-bold text-gray-400';
+                roiEl.textContent = '--';
+                roiEl.className = 'text-lg font-medium text-gray-400';
+            }
+
             const { labels, values, pctChanges } = generateData(S, K, days, r, s, type);
             drawValueChart(labels, values);
             drawPctChart(labels, pctChanges);
@@ -1031,6 +1110,27 @@ Date: 2026.04.15
         window.addEventListener('load', () => {
             calc();
         });
+
+        // 新增下载图表功能
+        function downloadChart(canvasId, name) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            // 创建一个临时的白色背景 Canvas 供导出（因为 Chart.js 默认背景可能是透明的）
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const ctx = tempCanvas.getContext('2d');
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            ctx.drawImage(canvas, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = `${name}_${new Date().toLocaleDateString()}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
     </script>
 </body>
 
