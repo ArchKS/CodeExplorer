@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "publish":"npm run build && gcp"
+    "publish":"npm run build"
   },
   "dependencies": {
     "clsx": "^2.1.0",
