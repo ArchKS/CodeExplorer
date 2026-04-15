@@ -99,9 +99,9 @@ Date: 2026.04.15
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2">一键批量输入</label>
                 <input type="text" id="batchInput"
-                    placeholder="示例：168660,180000,51,4,57.24 （格式：标的价格,行权价格,到期天数,无风险利率,波动率）"
+                    placeholder="示例：示例：168660,180000,51,4,57.24 或 168660,180000,2026.06.05,4,57.24 （格式：标的价格,行权价格,到期天数/到期日,无风险利率,波动率）"
                     class="w-full px-4 py-3 border border-gray-300 input-box batch-input"
-                    value="168660,180000,51,4,57.24">
+                    value="168660,180000,2026/06/05,4,57.24">
                 <div class="flex gap-3 mt-3">
                     <button id="parseBtn" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm">
                         <i class="fa fa-magic mr-1"></i> 解析并填充
@@ -130,10 +130,31 @@ Date: 2026.04.15
                     <input type="number" id="strikePrice" step="0.01" min="0" value=""
                         class="w-full px-4 py-3 border border-gray-300 input-box">
                 </div>
-                <div>
+                <!-- <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">剩余到期天数</label>
                     <input type="number" id="days" step="1" min="1" value=""
                         class="w-full px-4 py-3 border border-gray-300 input-box">
+                </div> -->
+                <!-- <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">到期天数 / 到期日期</label>
+                    <input type="text" id="days" value="" placeholder="例如：51 或 2026.06.05"
+                        class="w-full px-4 py-3 border border-gray-300 input-box">
+                    <p class="text-xs text-gray-400 mt-1">支持输入剩余天数，或日期：2026.06.05 / 2026-06-05 / 2026/06/05</p>
+                </div> -->
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">到期天数</label>
+                    <input type="number" id="days" step="1" min="0" value="" placeholder="例如：51"
+                        class="w-full px-4 py-3 border border-gray-300 input-box">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">到期日期</label>
+                    <input type="text" id="expiryDate" value="" placeholder="例如：2026.06.05"
+                        class="w-full px-4 py-3 border border-gray-300 input-box">
+                    <div id="daysHint" class="text-xs text-gray-500 mt-2 min-h-[20px]">
+                        支持输入 2026.06.05 / 2026-06-05 / 2026/06/05
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">无风险利率 (%)</label>
@@ -224,17 +245,28 @@ Date: 2026.04.15
         parseBtn.onclick = () => {
             const text = document.getElementById('batchInput').value.trim();
             if (!text) return;
-            const arr = text.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
+
+            const arr = text.split(',').map(x => x.trim());
             if (arr.length >= 5) {
-                document.getElementById('stockPrice').value = arr[0];
-                document.getElementById('strikePrice').value = arr[1];
-                document.getElementById('days').value = arr[2];
-                document.getElementById('rate').value = arr[3];
-                document.getElementById('vol').value = arr[4];
+                document.getElementById('stockPrice').value = parseFloat(arr[0]) || '';
+                document.getElementById('strikePrice').value = parseFloat(arr[1]) || '';
+                document.getElementById('rate').value = parseFloat(arr[3]) || '';
+                document.getElementById('vol').value = parseFloat(arr[4]) || '';
+
+                const third = arr[2] || '';
+                const expiryDate = parseDateInput(third);
+
+                if (expiryDate) {
+                    document.getElementById('expiryDate').value = formatDate(expiryDate);
+                    syncFromDate();
+                } else {
+                    document.getElementById('days').value = parseFloat(third) || '';
+                    syncFromDays();
+                }
+
                 calc();
             }
         };
-
         // 清空
         document.getElementById('clearBtn').onclick = () => {
             document.getElementById('batchInput').value = '';
@@ -263,7 +295,21 @@ Date: 2026.04.15
             calc();
         }
 
-        document.querySelectorAll('input').forEach(i => i.addEventListener('input', calc));
+        document.getElementById('stockPrice').addEventListener('input', calc);
+        document.getElementById('strikePrice').addEventListener('input', calc);
+        document.getElementById('rate').addEventListener('input', calc);
+        document.getElementById('vol').addEventListener('input', calc);
+
+        document.getElementById('days').addEventListener('input', () => {
+            syncFromDays();
+            calc();
+        });
+
+        document.getElementById('expiryDate').addEventListener('input', () => {
+            syncFromDate();
+            calc();
+        });
+
         document.getElementById('calc').onclick = calc;
 
         // 正态分布
@@ -272,6 +318,56 @@ Date: 2026.04.15
             const d = 0.3989423 * Math.exp(-x * x / 2);
             const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
             return x >= 0 ? 1 - p : p;
+        }
+
+        // function parseDateInput(value) {
+        //     if (value == null) return null;
+
+        //     const text = String(value).trim();
+        //     if (!text) return null;
+
+        //     // 支持 2026.06.05 / 2026-06-05 / 2026/06/05
+        //     const normalized = text.replace(/[./]/g, '-');
+        //     const m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        //     if (!m) return null;
+
+        //     const year = +m[1];
+        //     const month = +m[2];
+        //     const day = +m[3];
+
+        //     const dt = new Date(year, month - 1, day);
+        //     if (
+        //         dt.getFullYear() !== year ||
+        //         dt.getMonth() !== month - 1 ||
+        //         dt.getDate() !== day
+        //     ) {
+        //         return null;
+        //     }
+
+        //     return dt;
+        // }
+
+        function resolveDaysInput(value) {
+            const text = String(value ?? '').trim();
+            if (!text) return 0;
+
+            // 纯数字，按天数处理
+            if (/^\d+(\.\d+)?$/.test(text)) {
+                return Math.max(0, Math.ceil(parseFloat(text)));
+            }
+
+            // 否则按日期处理
+            const targetDate = parseDateInput(text);
+            if (!targetDate) return NaN;
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const end = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+            const diffMs = end - today;
+            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+            return Math.max(0, diffDays);
         }
 
         // BS模型计算
@@ -296,6 +392,131 @@ Date: 2026.04.15
             const theta = (-S * s * pdf / (2 * sqT) - r * K * Math.exp(-r * T) * (type === 'call' ? nd2 : ndm2)) / 365;
             const vega = S * sqT * pdf / 100;
             return { price, delta, gamma, theta, vega, rho };
+        }
+
+        function getTodayStart() {
+            const now = new Date();
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        }
+
+        function parseDateInput(value) {
+            if (value == null) return null;
+
+            const text = String(value).trim();
+            if (!text) return null;
+
+            const normalized = text.replace(/[./]/g, '-');
+            const m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+            if (!m) return null;
+
+            const year = +m[1];
+            const month = +m[2];
+            const day = +m[3];
+
+            const dt = new Date(year, month - 1, day);
+            if (
+                dt.getFullYear() !== year ||
+                dt.getMonth() !== month - 1 ||
+                dt.getDate() !== day
+            ) {
+                return null;
+            }
+
+            return dt;
+        }
+
+        function formatDate(dt) {
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const d = String(dt.getDate()).padStart(2, '0');
+            return `${y}.${m}.${d}`;
+        }
+
+        function addDays(baseDate, days) {
+            const dt = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+            dt.setDate(dt.getDate() + Math.round(Number(days || 0)));
+            return dt;
+        }
+
+        function calcDaysBetween(today, targetDate) {
+            const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const end = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+            const diffMs = end - start;
+            return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        }
+
+        function setHint(text, isError = false) {
+            const hint = document.getElementById('daysHint');
+            if (!hint) return;
+            hint.textContent = text;
+            hint.className = `text-xs mt-2 min-h-[20px] ${isError ? 'text-red-600' : 'text-gray-500'}`;
+        }
+
+        // days -> expiryDate
+        function syncFromDays() {
+            const daysEl = document.getElementById('days');
+            const dateEl = document.getElementById('expiryDate');
+            if (!daysEl || !dateEl) return false;
+
+            const raw = String(daysEl.value || '').trim();
+            if (!raw) {
+                dateEl.value = '';
+                setHint('支持输入 2026.06.05 / 2026-06-05 / 2026/06/05');
+                return false;
+            }
+
+            if (!/^\d+(\.\d+)?$/.test(raw)) {
+                setHint('到期天数格式不正确', true);
+                return false;
+            }
+
+            const days = Math.max(0, Math.ceil(parseFloat(raw)));
+            const expiryDate = addDays(getTodayStart(), days);
+            dateEl.value = formatDate(expiryDate);
+            setHint(`对应到期日期：${dateEl.value}`);
+            return true;
+        }
+
+        // expiryDate -> days
+        function syncFromDate() {
+            const daysEl = document.getElementById('days');
+            const dateEl = document.getElementById('expiryDate');
+            if (!daysEl || !dateEl) return false;
+
+            const raw = String(dateEl.value || '').trim();
+            if (!raw) {
+                daysEl.value = '';
+                setHint('支持输入 2026.06.05 / 2026-06-05 / 2026/06/05');
+                return false;
+            }
+
+            const dt = parseDateInput(raw);
+            if (!dt) {
+                setHint('到期日期格式不正确，请输入例如：2026.06.05', true);
+                return false;
+            }
+
+            const days = calcDaysBetween(getTodayStart(), dt);
+            daysEl.value = days;
+            setHint(`对应到期天数：${days} 天`);
+            return true;
+        }
+
+        function getResolvedDays() {
+            const rawDays = String(document.getElementById('days')?.value || '').trim();
+            const rawDate = String(document.getElementById('expiryDate')?.value || '').trim();
+
+            if (rawDays && /^\d+(\.\d+)?$/.test(rawDays)) {
+                return Math.max(0, Math.ceil(parseFloat(rawDays)));
+            }
+
+            if (rawDate) {
+                const dt = parseDateInput(rawDate);
+                if (!dt) return NaN;
+                return calcDaysBetween(getTodayStart(), dt);
+            }
+
+            return 0;
         }
 
         // 生成数据
@@ -435,10 +656,272 @@ Date: 2026.04.15
             }
         };
 
+        const FLAG_TARGET = -5;
+
+        // 计算曲线首次与 target 相交的位置
+        function findCrossingInfo(labels, data, target = -5) {
+            if (!data || data.length < 2) return null;
+
+            for (let i = 0; i < data.length - 1; i++) {
+                const y1 = data[i];
+                const y2 = data[i + 1];
+
+                // 正好命中某个点
+                if (y1 === target) {
+                    return {
+                        hitType: 'point',
+                        index: i,
+                        daysFromStart: i,
+                        label: labels[i],
+                        value: y1
+                    };
+                }
+
+                // 判断这一段是否穿过 target
+                const crossed =
+                    (y1 - target) * (y2 - target) < 0 ||
+                    y2 === target;
+
+                if (crossed) {
+                    const t = (target - y1) / (y2 - y1); // 0~1
+                    const daysFromStart = i + t;
+
+                    return {
+                        hitType: 'segment',
+                        index: i,
+                        nextIndex: i + 1,
+                        t,
+                        daysFromStart,
+                        value: target,
+                        leftLabel: labels[i],
+                        rightLabel: labels[i + 1]
+                    };
+                }
+            }
+
+            return null;
+        }
+
+
+
+        // function drawPctChart(labels, data) {
+        //     try {
+        //         const ctx = document.getElementById('pctChart').getContext('2d');
+        //         if (pctChart) pctChart.destroy();
+
+        //         pctChart = new Chart(ctx, {
+        //             type: 'line',
+        //             data: {
+        //                 labels,
+        //                 datasets: [{
+        //                     label: '环比变化幅度(以-5%为界)',
+        //                     data,
+        //                     borderColor: 'blue',
+        //                     borderWidth: 3,
+        //                     pointRadius: 0,
+        //                     tension: 0.2,
+        //                     fill: false // 这里关掉默认填充
+        //                 }]
+        //             },
+        //             options: {
+        //                 responsive: true,
+        //                 maintainAspectRatio: false,
+        //                 plugins: {
+        //                     tooltip: {
+        //                         mode: 'index',
+        //                         intersect: false
+        //                     }
+        //                 },
+        //                 scales: {
+        //                     x: {
+        //                         grid: { color: '#eee' }
+        //                     },
+        //                     y: {
+        //                         grid: { color: '#eee' },
+        //                         ticks: {
+        //                             stepSize: 5
+        //                         }
+        //                     }
+        //                 }
+        //             },
+        //             plugins: [areaBetweenLineAndXAxisPlugin]
+        //         });
+        //     } catch (e) {
+        //         console.error(e);
+        //     }
+        // }
+        function getStartDateFromExpiryAndDays(expiryDateText, totalDays) {
+            const expiry = parseDateInput(expiryDateText);
+            if (!expiry || !Number.isFinite(totalDays)) return null;
+
+            const start = new Date(expiry.getFullYear(), expiry.getMonth(), expiry.getDate());
+            start.setDate(start.getDate() - Math.round(totalDays));
+            return start;
+        }
+
         function drawPctChart(labels, data) {
             try {
                 const ctx = document.getElementById('pctChart').getContext('2d');
                 if (pctChart) pctChart.destroy();
+
+                const crossingInfo = findCrossingInfo(labels, data, FLAG_TARGET);
+
+                const areaBetweenLineAndXAxisPlugin = {
+                    id: 'areaBetweenLineAndXAxisPlugin',
+                    beforeDatasetsDraw(chart) {
+                        const { ctx, chartArea, scales } = chart;
+                        if (!chartArea || !scales.x || !scales.y) return;
+
+                        const meta = chart.getDatasetMeta(0);
+                        const points = meta.data;
+                        const values = chart.data.datasets[0].data;
+
+                        if (!points || points.length < 2) return;
+
+                        const baseY = scales.y.getPixelForValue(0);
+
+                        ctx.save();
+
+                        for (let i = 0; i < points.length - 1; i++) {
+                            const p1 = points[i];
+                            const p2 = points[i + 1];
+
+                            const x1 = p1.x;
+                            const y1 = p1.y;
+                            const x2 = p2.x;
+                            const y2 = p2.y;
+
+                            const v = values[i + 1];
+
+                            ctx.beginPath();
+                            ctx.moveTo(x1, baseY);
+                            ctx.lineTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                            ctx.lineTo(x2, baseY);
+                            ctx.closePath();
+
+                            ctx.fillStyle = v < -5
+                                ? 'rgba(220,38,38,0.20)'
+                                : 'rgba(5,150,105,0.10)';
+
+                            ctx.fill();
+                        }
+
+                        ctx.restore();
+                    }
+                };
+
+                const flagPlugin = {
+                    id: 'flagPlugin',
+                    afterDatasetsDraw(chart) {
+                        if (!crossingInfo) return;
+
+                        const { ctx, scales, chartArea } = chart;
+                        const meta = chart.getDatasetMeta(0);
+                        const points = meta.data;
+                        if (!points || !points.length) return;
+
+                        const flagY = scales.y.getPixelForValue(FLAG_TARGET);
+
+                        let flagX = null;
+
+                        if (crossingInfo.hitType === 'point') {
+                            flagX = points[crossingInfo.index]?.x ?? null;
+                        } else if (crossingInfo.hitType === 'segment') {
+                            const p1 = points[crossingInfo.index];
+                            const p2 = points[crossingInfo.nextIndex];
+                            if (!p1 || !p2) return;
+                            flagX = p1.x + (p2.x - p1.x) * crossingInfo.t;
+                        }
+
+                        flagX -=12;
+
+                        console.log({flagX});
+                        if (flagX == null) return;
+
+                        const totalDays = getResolvedDays();
+                        const expiryDateText = document.getElementById('expiryDate')?.value?.trim() || '';
+                        const startDate = getStartDateFromExpiryAndDays(expiryDateText, totalDays);
+
+                        let daysText = `距起点 ${crossingInfo.daysFromStart.toFixed(1)} 天`;
+
+                        if (startDate) {
+                            const hitDate = addDays(startDate, crossingInfo.daysFromStart);
+                            daysText = `距起点 ${crossingInfo.daysFromStart.toFixed(1)} 天（${formatDate(hitDate)}）`;
+                        }
+
+                        // const totalDays = parseFloat(labels[0]);
+                        // const remainDays = totalDays - crossingInfo.daysFromStart;
+                        // const daysText = `剩余 ${remainDays.toFixed(1)} 天`;
+
+                        const valueText = `-5%`;
+                        const poleTopY = Math.max(chartArea.top + 100, flagY - 58);
+                        const poleBottomY = flagY;
+
+                        ctx.save();
+
+                        // 1) 画水平参考虚线
+                        ctx.beginPath();
+                        ctx.setLineDash([6, 4]);
+                        ctx.strokeStyle = 'rgba(245, 80, 0, 0.65)';
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(chartArea.left, flagY);
+                        ctx.lineTo(chartArea.right, flagY);
+                        ctx.stroke();
+
+                        // 2) 画旗杆
+                        ctx.setLineDash([]);
+                        ctx.beginPath();
+                        ctx.strokeStyle = '#f55000';
+                        ctx.lineWidth = 2;
+                        ctx.moveTo(flagX, poleBottomY);
+                        ctx.lineTo(flagX, poleTopY);
+                        ctx.stroke();
+
+                        // 3) 画旗面
+                        const flagW = 52;
+                        const flagH = 22;
+                        const flagTip = 10;
+
+                        ctx.beginPath();
+                        ctx.moveTo(flagX, poleTopY);
+                        ctx.lineTo(flagX + flagW, poleTopY);
+                        ctx.lineTo(flagX + flagW - flagTip, poleTopY + flagH / 2);
+                        ctx.lineTo(flagX + flagW, poleTopY + flagH);
+                        ctx.lineTo(flagX, poleTopY + flagH);
+                        ctx.closePath();
+                        ctx.fillStyle = '#f55000';
+                        ctx.fill();
+
+                        // 4) 旗面文字
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '12px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(valueText, flagX + 24, poleTopY + flagH / 2);
+
+                        // 5) 交点圆点
+                        ctx.beginPath();
+                        ctx.arc(flagX, flagY, 4, 0, Math.PI * 2);
+                        ctx.fillStyle = '#f55000';
+                        ctx.fill();
+
+                        // 6) 天数说明
+                        ctx.font = '12px sans-serif';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillStyle = '#374151';
+
+                        let textX = flagX + 8;
+                        if (textX > chartArea.right - 90) {
+                            textX = flagX - 90;
+                        }
+
+                        ctx.fillText(daysText, textX, poleTopY - 6);
+
+                        ctx.restore();
+                    }
+                };
 
                 pctChart = new Chart(ctx, {
                     type: 'line',
@@ -451,7 +934,7 @@ Date: 2026.04.15
                             borderWidth: 3,
                             pointRadius: 0,
                             tension: 0.2,
-                            fill: false // 这里关掉默认填充
+                            fill: false
                         }]
                     },
                     options: {
@@ -460,7 +943,24 @@ Date: 2026.04.15
                         plugins: {
                             tooltip: {
                                 mode: 'index',
-                                intersect: false
+                                intersect: false,
+                                callbacks: {
+                                    afterBody: function (items) {
+                                        if (!items.length) return '';
+
+                                        const idx = items[0].dataIndex;
+                                        const v = data[idx];
+
+                                        if (v === FLAG_TARGET) {
+                                            return `命中 -5%，距起点 ${idx.toFixed(1)} 天`;
+                                        }
+
+                                        return '';
+                                    }
+                                }
+                            },
+                            legend: {
+                                display: true
                             }
                         },
                         scales: {
@@ -475,7 +975,7 @@ Date: 2026.04.15
                             }
                         }
                     },
-                    plugins: [areaBetweenLineAndXAxisPlugin]
+                    plugins: [areaBetweenLineAndXAxisPlugin, flagPlugin]
                 });
             } catch (e) {
                 console.error(e);
@@ -508,10 +1008,11 @@ Date: 2026.04.15
         function calc() {
             const S = +document.getElementById('stockPrice').value || 0;
             const K = +document.getElementById('strikePrice').value || 0;
-            const days = +document.getElementById('days').value || 0;
+            const days = getResolvedDays();
             const r = +document.getElementById('rate').value || 0;
             const s = +document.getElementById('vol').value || 0;
-            if (S <= 0 || K <= 0 || days <= 0 || s <= 0) return;
+
+            if (S <= 0 || K <= 0 || !Number.isFinite(days) || days <= 0 || s <= 0) return;
 
             const res = bs(S, K, days / 365, r / 100, s / 100, type);
             document.getElementById('price').textContent = res.price.toFixed(4);
