@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(npx --version:*)",
+      "Bash(nvm list:*)",
+      "Bash(nvm use:*)",
+      "Bash(if exist node_modules rmdir /s /q node_modules)",
+      "Bash(if exist package-lock.json del /q package-lock.json)",
+      "Bash(find:*)",
+      "Bash(echo:*)",
+      "Bash(where:*)",
+      "Bash(test:*)",
+      "Bash(ray build --help:*)",
+      "Bash(npx @raycast/api@latest build:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
