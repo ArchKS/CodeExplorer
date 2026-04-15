@@ -2,13 +2,14 @@ import { useState, useMemo, useEffect } from 'react';
 import { shortSource, longSource, type FileItem } from './data';
 import CodeCard from './components/CodeCard';
 import CodeModal from './components/CodeModal';
-import { ChevronRight, Home, ArrowLeft } from 'lucide-react';
+import { ChevronRight, Home, ArrowLeft, Search } from 'lucide-react';
 
 function App() {
   const [history, setHistory] = useState<FileItem[][]>([]);
   const [selectedFile, setSelectedFile] = useState<{ path: string; name: string } | null>(null);
-  const [intros, setIntros] = useState<Record<string, string>>({});
+  const [metadata, setMetadata] = useState<Record<string, { intro?: string; date?: string }>>({});
   const [filter, setFilter] = useState<'all' | 'file' | 'directory'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const currentItems = useMemo(() => {
     let items: FileItem[] = [];
@@ -23,13 +24,42 @@ function App() {
     } else {
       items = history[history.length - 1];
     }
-    return items;
-  }, [history, filter]);
 
-  // 自动扫描当前页面文件或目录（README.md）中的 Intro
+    // 搜索过滤
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      items = items.filter(item => 
+        item.name.toLowerCase().includes(query) || 
+        (metadata[item.path]?.intro && metadata[item.path].intro!.toLowerCase().includes(query))
+      );
+    }
+
+    // 排序逻辑：有日期的文件在前（按日期倒序），无日期的文件次之，目录统一在最后
+    return [...items].sort((a, b) => {
+      // 1. 类型优先级：目录最后
+      if (a.type !== b.type) {
+        return a.type === 'directory' ? 1 : -1;
+      }
+
+      // 2. 日期优先级（越近越靠前）
+      const dateA = metadata[a.path]?.date || '';
+      const dateB = metadata[b.path]?.date || '';
+
+      if (dateA && dateB) {
+        return dateB.localeCompare(dateA); // 字符串比较适用于 YYYY.MM.DD
+      }
+      if (dateA) return -1;
+      if (dateB) return 1;
+
+      // 3. 默认按名称
+      return a.name.localeCompare(b.name);
+    });
+  }, [history, filter, searchQuery, metadata]);
+
+  // 自动扫描当前页面文件或目录（README.md）中的 Intro 和 Date
   useEffect(() => {
-    const fetchIntros = async () => {
-      const itemsToFetch = currentItems.filter(item => !intros[item.path]);
+    const fetchMetadata = async () => {
+      const itemsToFetch = currentItems.filter(item => !metadata[item.path]);
 
       for (const item of itemsToFetch) {
         let fetchPath = '';
@@ -46,18 +76,27 @@ function App() {
           try {
             const response = await fetch(fetchPath);
             const text = await response.text();
-            const match = text.match(/Intro:\s*(.*)/i);
-            if (match && match[1]) {
-              setIntros(prev => ({ ...prev, [item.path]: match[1].trim() }));
+            const introMatch = text.match(/Intro:\s*(.*)/i);
+            const dateMatch = text.match(/Date:\s*(.*)/i);
+            
+            const newMeta: { intro?: string; date?: string } = {};
+            if (introMatch && introMatch[1]) newMeta.intro = introMatch[1].trim();
+            if (dateMatch && dateMatch[1]) newMeta.date = dateMatch[1].trim();
+
+            if (Object.keys(newMeta).length > 0) {
+              setMetadata(prev => ({ ...prev, [item.path]: newMeta }));
+            } else {
+              // 标记已尝试抓取但无结果，避免重复抓取
+              setMetadata(prev => ({ ...prev, [item.path]: {} }));
             }
           } catch (e) {
-            console.error(`Failed to fetch intro for ${item.path}`, e);
+            console.error(`Failed to fetch metadata for ${item.path}`, e);
           }
         }
       }
     };
 
-    fetchIntros();
+    fetchMetadata();
   }, [currentItems]);
 
   const handleItemClick = (item: FileItem) => {
@@ -128,6 +167,17 @@ function App() {
           >
             <Home size={20} />
           </button>
+
+          <div className="relative mx-4 hidden sm:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64 lg:w-96 transition-all outline-none placeholder:text-gray-300"
+            />
+          </div>
           
           {history.length > 0 && (
             <>
@@ -184,7 +234,7 @@ function App() {
               key={`${item.path}-${index}`}
               name={item.name}
               type={item.type}
-              intro={item.intro || intros[item.path]}
+              intro={metadata[item.path]?.intro}
               onClick={() => handleItemClick(item)}
               onDownload={(e) => handleDownload(e, item)}
             />

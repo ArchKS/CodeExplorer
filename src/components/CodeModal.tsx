@@ -124,7 +124,7 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, onClose }) =>
             <div className="flex items-center justify-center w-full h-full bg-gray-100 p-8">
               <iframe
                 src={filePath}
-                className="w-[90%] h-[60vh] bg-white shadow-lg border border-gray-200"
+                className="w-[90%] h-[80vh] bg-white shadow-lg border border-gray-200"
                 title="HTML Preview"
               />
             </div>

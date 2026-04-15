@@ -29,21 +29,23 @@ const CodeCard: React.FC<CodeCardProps> = ({ name, type, intro, onClick, onDownl
         ) : (
           <Folder size={40} className="text-yellow-500" />
         )}
-        
-        <span className="text-sm font-bold text-gray-800 truncate w-full text-center px-2">
+
+        {intro && (
+          <p className=" text-sm mt-4 font-bold text-gray-800 line-clamp-2 px-3 text-center leading-tight">
+            {intro}
+          </p>
+        )}
+
+        <span className="text-[11px] text-gray-500 truncate w-full text-center px-2">
           {name}
         </span>
       </div>
-      
-      {intro && (
-        <p className="text-[11px] text-gray-500 line-clamp-2 px-3 text-center leading-tight">
-          {intro}
-        </p>
-      )}
 
-      <div className="mt-auto pb-3 text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+
+
+      {/* <div className="mt-auto pb-3 text-[10px] uppercase tracking-widest text-gray-400 font-bold">
         {type}
-      </div>
+      </div> */}
     </div>
   );
 };

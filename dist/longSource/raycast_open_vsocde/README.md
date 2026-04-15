@@ -1,3 +1,5 @@
+Intro: RayCast打开VsCode
+
 # VS Code Project Manager for Raycast
 
 A Raycast extension to quickly manage and open your Visual Studio Code projects with **Windows support**.

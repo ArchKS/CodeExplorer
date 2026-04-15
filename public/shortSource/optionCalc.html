@@ -1,0 +1,532 @@
+<!-- 
+Intro: 期权理论价值
+Date: 2026.04.15
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期权价值计算器</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4eaf5 100%);
+            min-height: 100vh;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 20, 60, 0.08);
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #4361ee, #5a78f3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
+        }
+
+        .btn-light {
+            background: #f1f5f9;
+            transition: all 0.2s;
+        }
+
+        .btn-light:hover {
+            background: #e2e8f0;
+        }
+
+        .input-box {
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .input-box:focus {
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+        }
+
+        .table-scroll {
+            max-height: 380px;
+            overflow-y: auto;
+            border-radius: 12px;
+        }
+
+        thead {
+            background: #f8fafc;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .batch-input {
+            border-radius: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .text-red-600 {
+            color: #dc2626;
+        }
+
+        .text-green-600 {
+            color: #059669;
+        }
+    </style>
+</head>
+
+<body class="py-10 px-4">
+    <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 tracking-wide">期权价值计算器</h1>
+            <p class="text-gray-500 mt-2">Black-Scholes 模型 · 专业计算</p>
+        </div>
+
+        <div class="card p-6 md:p-8 mb-8">
+            <!-- 批量输入 -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">一键批量输入</label>
+                <input type="text" id="batchInput"
+                    placeholder="示例：168660,180000,51,4,57.24 （格式：标的价格,行权价格,到期天数,无风险利率,波动率）"
+                    class="w-full px-4 py-3 border border-gray-300 input-box batch-input"
+                    value="168660,180000,51,4,57.24">
+                <div class="flex gap-3 mt-3">
+                    <button id="parseBtn" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm">
+                        <i class="fa fa-magic mr-1"></i> 解析并填充
+                    </button>
+                    <button id="clearBtn" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">
+                        <i class="fa fa-trash mr-1"></i> 清空
+                    </button>
+                </div>
+            </div>
+
+            <!-- 期权类型 -->
+            <div class="flex gap-4 mb-7">
+                <button id="callBtn" class="flex-1 py-3 rounded-xl font-medium text-white btn-primary">看涨期权</button>
+                <button id="putBtn" class="flex-1 py-3 rounded-xl font-medium text-gray-700 btn-light">看跌期权</button>
+            </div>
+
+            <!-- 输入区 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-7">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">标的价格 (S)</label>
+                    <input type="number" id="stockPrice" step="0.01" min="0" value="168660"
+                        class="w-full px-4 py-3 border border-gray-300 input-box">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">行权价格 (K)</label>
+                    <input type="number" id="strikePrice" step="0.01" min="0" value="180000"
+                        class="w-full px-4 py-3 border border-gray-300 input-box">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">剩余到期天数</label>
+                    <input type="number" id="days" step="1" min="1" value="51"
+                        class="w-full px-4 py-3 border border-gray-300 input-box">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">无风险利率 (%)</label>
+                    <input type="number" id="rate" step="0.01" min="0" value="3"
+                        class="w-full px-4 py-3 border border-gray-300 input-box">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">波动率 (%)</label>
+                    <input type="number" id="vol" step="0.01" min="0.1" value="50"
+                        class="w-full px-4 py-3 border border-gray-300 input-box">
+                </div>
+            </div>
+
+            <!-- 计算 -->
+            <button id="calc" class="w-full py-3 btn-primary text-white rounded-xl font-medium mb-7">
+                <i class="fa fa-calculator mr-1"></i> 计 算
+            </button>
+
+            <!-- 结果 -->
+            <div class="bg-gray-50 p-5 rounded-xl mb-7">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">理论价格</p>
+                        <p id="price" class="text-xl font-bold text-indigo-600">0.0000</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Delta</p>
+                        <p id="delta" class="text-lg font-medium">0.0000</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Gamma</p>
+                        <p id="gamma" class="text-lg font-medium">0.0000</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Theta</p>
+                        <p id="theta" class="text-lg font-medium">0.0000</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Vega</p>
+                        <p id="vega" class="text-lg font-medium">0.0000</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Rho</p>
+                        <p id="rho" class="text-lg font-medium">0.0000</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图表1：期权价值 -->
+            <div class="h-[420px] mb-7">
+                <canvas id="valueChart"></canvas>
+            </div>
+
+            <!-- 图表2：环比变化幅度 -->
+            <div class="h-[420px] mb-7">
+                <canvas id="pctChart"></canvas>
+            </div>
+
+            <!-- 表格 -->
+            <div>
+                <h3 class="text-lg font-semibold mb-3">每日期权价值明细</h3>
+                <div class="table-scroll border ">
+                    <table class="w-full text-sm text-left">
+                        <thead class="sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 border-b font-medium">剩余天数</th>
+                                <th class="px-4 py-3 border-b font-medium">期权价值</th>
+                                <th class="px-4 py-3 border-b font-medium">环比变化</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let type = 'call';
+        let valueChart = null;
+        let pctChart = null;
+
+        // 批量解析
+        document.getElementById('parseBtn').onclick = () => {
+            const text = document.getElementById('batchInput').value.trim();
+            if (!text) return;
+            const arr = text.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
+            if (arr.length >= 5) {
+                document.getElementById('stockPrice').value = arr[0];
+                document.getElementById('strikePrice').value = arr[1];
+                document.getElementById('days').value = arr[2];
+                document.getElementById('rate').value = arr[3];
+                document.getElementById('vol').value = arr[4];
+                calc();
+            }
+        };
+
+        // 清空
+        document.getElementById('clearBtn').onclick = () => {
+            document.getElementById('batchInput').value = '';
+        };
+
+        // 回车快捷解析
+        document.getElementById('batchInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('parseBtn').click();
+        });
+
+        // 切换期权类型
+        document.getElementById('callBtn').onclick = () => {
+            type = 'call';
+            document.getElementById('callBtn').classList.add('btn-primary', 'text-white');
+            document.getElementById('callBtn').classList.remove('btn-light', 'text-gray-700');
+            document.getElementById('putBtn').classList.add('btn-light', 'text-gray-700');
+            document.getElementById('putBtn').classList.remove('btn-primary', 'text-white');
+            calc();
+        }
+        document.getElementById('putBtn').onclick = () => {
+            type = 'put';
+            document.getElementById('putBtn').classList.add('btn-primary', 'text-white');
+            document.getElementById('putBtn').classList.remove('btn-light', 'text-gray-700');
+            document.getElementById('callBtn').classList.add('btn-light', 'text-gray-700');
+            document.getElementById('callBtn').classList.remove('btn-primary', 'text-white');
+            calc();
+        }
+
+        document.querySelectorAll('input').forEach(i => i.addEventListener('input', calc));
+        document.getElementById('calc').onclick = calc;
+
+        // 正态分布
+        function norm(x) {
+            const t = 1 / (1 + 0.2316419 * Math.abs(x));
+            const d = 0.3989423 * Math.exp(-x * x / 2);
+            const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+            return x >= 0 ? 1 - p : p;
+        }
+
+        // BS模型计算
+        function bs(S, K, T, r, s, type) {
+            const sqT = Math.sqrt(T);
+            const d1 = (Math.log(S / K) + (r + 0.5 * s * s) * T) / (s * sqT);
+            const d2 = d1 - s * sqT;
+            const nd1 = norm(d1), nd2 = norm(d2);
+            const ndm1 = norm(-d1), ndm2 = norm(-d2);
+            const pdf = Math.exp(-d1 * d1 / 2) / Math.sqrt(2 * Math.PI);
+
+            let price, delta, rho;
+            if (type === 'call') {
+                price = S * nd1 - K * Math.exp(-r * T) * nd2;
+                delta = nd1; rho = K * T * Math.exp(-r * T) * nd2 / 100;
+            } else {
+                price = K * Math.exp(-r * T) * ndm2 - S * ndm1;
+                delta = -ndm1; rho = -K * T * Math.exp(-r * T) * ndm2 / 100;
+            }
+
+            const gamma = pdf / (S * s * sqT);
+            const theta = (-S * s * pdf / (2 * sqT) - r * K * Math.exp(-r * T) * (type === 'call' ? nd2 : ndm2)) / 365;
+            const vega = S * sqT * pdf / 100;
+            return { price, delta, gamma, theta, vega, rho };
+        }
+
+        // 生成数据
+        function generateData(S, K, daysTotal, r, s, type) {
+            const labels = [], values = [], pctChanges = [];
+            for (let d = daysTotal; d >= 0; d--) {
+                const T = d / 365;
+                const val = bs(S, K, T, r / 100, s / 100, type).price;
+                labels.push(d + '天');
+                values.push(val);
+            }
+
+            // 计算环比
+            for (let i = 0; i < values.length; i++) {
+                if (i === 0) { pctChanges.push(0); continue; }
+                const prev = values[i - 1];
+                const curr = values[i];
+                if (prev === 0) { pctChanges.push(0); continue; }
+                const pct = (curr - prev) / prev * 100;
+                pctChanges.push(pct);
+            }
+            return { labels, values, pctChanges };
+        }
+
+        // 绘制价值图
+        function drawValueChart(labels, data) {
+            try {
+                const ctx = document.getElementById('valueChart').getContext('2d');
+                if (valueChart) valueChart.destroy();
+                valueChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '期权价值',
+                            data: data,
+                            borderColor: '#4361ee',
+                            backgroundColor: 'rgba(67,97,238,0.1)',
+                            borderWidth: 3, pointRadius: 0, tension: 0.4, fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { tooltip: { mode: 'index', intersect: false } },
+                        scales: {
+                            x: { grid: { color: '#eee' } }, y: { grid: { color: '#eee' } }
+                        }
+                    }
+                });
+            } catch (e) { }
+        }
+
+        // 绘制环比变化图（新增）
+        // function drawPctChart(labels, data) {
+        //     try {
+        //         const ctx = document.getElementById('pctChart').getContext('2d');
+        //         if (pctChart) pctChart.destroy();
+        //         const backgroundColors = data.map(v => v < -5 ? 'rgba(220,38,38,0.2)' : 'rgba(5,150,105,0.1)');
+        //         const borderColors = data.map(v => v < -5 ? '#dc2626' : '#059669');
+
+        //         pctChart = new Chart(ctx, {
+        //             type: 'line',
+        //             data: {
+        //                 labels: labels,
+        //                 datasets: [{
+        //                     label: '环比变化幅度 (%)',
+        //                     data: data,
+        //                     borderColor: borderColors,
+        //                     backgroundColor: (context)=>{
+        //                         console.log(context);
+        //                         return context.raw < -5 ? '#f50' : 'blue';
+        //                     },
+        //                     borderWidth: 2, pointRadius: 0, tension: 0.2, fill: true
+        //                 }]
+        //             },
+        //             options: {
+        //                 responsive: true, maintainAspectRatio: false,
+        //                 plugins: { tooltip: { mode: 'index', intersect: false } },
+        //                 scales: {
+        //                     x: { grid: { color: '#eee' } }, y: {
+        //                         grid: { color: '#eee' }, ticks: {
+        //                             stepSize: 5
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         });
+        //     } catch (e) { }
+        // }
+
+
+        const areaBetweenLineAndXAxisPlugin = {
+            id: 'areaBetweenLineAndXAxisPlugin',
+            beforeDatasetsDraw(chart) {
+                const { ctx, chartArea, scales } = chart;
+                if (!chartArea || !scales.x || !scales.y) return;
+
+                const meta = chart.getDatasetMeta(0);
+                const points = meta.data;
+                const data = chart.data.datasets[0].data;
+
+                if (!points || points.length < 2) return;
+
+                // x轴对应的像素位置。这里是 y=0
+                const baseY = scales.y.getPixelForValue(0);
+
+                ctx.save();
+
+                for (let i = 0; i < points.length - 1; i++) {
+                    const p1 = points[i];
+                    const p2 = points[i + 1];
+
+                    const x1 = p1.x;
+                    const y1 = p1.y;
+                    const x2 = p2.x;
+                    const y2 = p2.y;
+
+                    // 这一段的颜色规则
+                    // 你可以按 data[i]、data[i+1]、或者两者平均值来判断
+                    const v = data[i + 1];
+
+                    ctx.beginPath();
+                    ctx.moveTo(x1, baseY);   // 从x轴起点开始
+                    ctx.lineTo(x1, y1);      // 到曲线第一个点
+                    ctx.lineTo(x2, y2);      // 到曲线第二个点
+                    ctx.lineTo(x2, baseY);   // 回到x轴终点
+                    ctx.closePath();
+
+                    ctx.fillStyle = v < -5
+                        ? 'rgba(220,38,38,0.20)'
+                        : 'rgba(5,150,105,0.10)';
+
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        };
+
+        function drawPctChart(labels, data) {
+            try {
+                const ctx = document.getElementById('pctChart').getContext('2d');
+                if (pctChart) pctChart.destroy();
+
+                pctChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: '环比变化幅度(以-5%为界)',
+                            data,
+                            borderColor: 'blue',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            tension: 0.2,
+                            fill: false // 这里关掉默认填充
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: '#eee' }
+                            },
+                            y: {
+                                grid: { color: '#eee' },
+                                ticks: {
+                                    stepSize: 5
+                                }
+                            }
+                        }
+                    },
+                    plugins: [areaBetweenLineAndXAxisPlugin]
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+
+        // 渲染表格
+        function renderTable(labels, values, pctChanges) {
+            const tb = document.getElementById('tableBody');
+            tb.innerHTML = '';
+            for (let i = 0; i < labels.length; i++) {
+                const tr = document.createElement('tr');
+                let changeText = '-';
+                let color = 'text-gray-600';
+                if (i > 0) {
+                    changeText = pctChanges[i].toFixed(2) + '%';
+                    color = pctChanges[i] >= 0 ? 'text-green-600' : 'text-red-600';
+                }
+                tr.innerHTML = `
+                <td class="px-4 py-2.5">${labels[i]}</td>
+                <td class="px-4 py-2.5 font-medium">${values[i].toFixed(4)}</td>
+                <td class="px-4 py-2.5 font-medium ${color}">${changeText}</td>
+            `;
+                tb.appendChild(tr);
+            }
+        }
+
+        // 主计算
+        function calc() {
+            const S = +document.getElementById('stockPrice').value || 0;
+            const K = +document.getElementById('strikePrice').value || 0;
+            const days = +document.getElementById('days').value || 0;
+            const r = +document.getElementById('rate').value || 0;
+            const s = +document.getElementById('vol').value || 0;
+            if (S <= 0 || K <= 0 || days <= 0 || s <= 0) return;
+
+            const res = bs(S, K, days / 365, r / 100, s / 100, type);
+            document.getElementById('price').textContent = res.price.toFixed(4);
+            document.getElementById('delta').textContent = res.delta.toFixed(4);
+            document.getElementById('gamma').textContent = res.gamma.toFixed(6);
+            document.getElementById('theta').textContent = res.theta.toFixed(6);
+            document.getElementById('vega').textContent = res.vega.toFixed(4);
+            document.getElementById('rho').textContent = res.rho.toFixed(4);
+
+            const { labels, values, pctChanges } = generateData(S, K, days, r, s, type);
+            drawValueChart(labels, values);
+            drawPctChart(labels, pctChanges);
+            renderTable(labels, values, pctChanges);
+        }
+
+        window.addEventListener('load', () => {
+            calc();
+        });
+    </script>
+</body>
+
+</html>
