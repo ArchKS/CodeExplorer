@@ -7,15 +7,15 @@ export interface FileItem {
 }
 
 // 自动扫描 shortSource 下的一级文件
-const shortModules = import.meta.glob('/public/shortSource/*', { as: 'url' });
+const shortModules = import.meta.glob('/public/shortSource/*', { query: '?url' });
 export const shortSource: FileItem[] = Object.keys(shortModules).map((key) => ({
-  name: key.split('/').pop() || '',
-  path: key.replace('/public', ''),
+  name: key.split('/').pop()?.split('?')[0] || '',
+  path: key.replace('/public', '').split('?')[0],
   type: 'file',
 }));
 
 // 自动扫描 longSource 下的所有递归文件
-const longModules = import.meta.glob('/public/longSource/**', { as: 'url' });
+const longModules = import.meta.glob('/public/longSource/**', { query: '?url' });
 
 const buildTree = (): FileItem[] => {
   const root: FileItem[] = [];
