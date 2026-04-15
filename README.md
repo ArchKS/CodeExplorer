@@ -1,73 +1,51 @@
-# React + TypeScript + Vite
+# Code Viewer (Pure Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project allows you to showcase your code source files in a beautiful, card-based interface.
 
-Currently, two official plugins are available:
+## How to use
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1.  **Place your single files** in `public/shortSource/`.
+2.  **Place your directories** in `public/longSource/`.
+3.  **Update `src/data.ts`** to include the paths to your files and folders.
 
-## React Compiler
+### Data Format in `src/data.ts`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
+```typescript
+export const shortSource: FileItem[] = [
   {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
+    name: 'your-file.js',
+    path: '/shortSource/your-file.js',
+    type: 'file',
   },
-])
+];
+
+export const longSource: FileItem[] = [
+  {
+    name: 'your-folder',
+    path: '/longSource/your-folder',
+    type: 'directory',
+    children: [
+      {
+        name: 'sub-file.ts',
+        path: '/longSource/your-folder/sub-file.ts',
+        type: 'file',
+      },
+    ],
+  },
+];
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Features
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **Card View**: Clean cards for files and folders.
+- **Syntax Highlighting**: Prism-based code viewing for various languages.
+- **Navigation**: Click folders to dive deeper, use breadcrumbs to go back.
+- **Download**: Download any file directly from the card or modal.
+- **Pure Frontend**: No backend required; can be hosted on GitHub Pages, Vercel, etc.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Setup
+
+```bash
+npm install
+npm run dev
 ```

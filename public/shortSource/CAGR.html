@@ -1,0 +1,639 @@
+<!--
+Intro: 计算年化收益率
+ -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAGR</title>
+    <style>
+        /* ==================== 基础样式 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        /* ==================== 页面标题 ==================== */
+        .page-title {
+            text-align: center;
+            color: white;
+            font-size: 32px;
+            margin-bottom: 40px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ==================== 布局容器 ==================== */
+        .calculators-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+        }
+
+        .calculator-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        /* ==================== 区块标题 ==================== */
+        .section-title {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        /* ==================== 输入框样式 ==================== */
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .input-group input,
+        .calc-row input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus,
+        .calc-row input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .hint {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        /* ==================== 按钮样式 ==================== */
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-clear {
+            width: 120px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            border: 2px solid #eee;
+            background: #000;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #fff;
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-clear:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* ==================== 结果显示样式 ==================== */
+        .result-box {
+            margin-top: 30px;
+            padding: 25px;
+            background: #eee;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #555;
+            font-size: 13px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .result-value {
+            color: #333;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .result-value.positive {
+            color: #10b981;
+        }
+
+        .result-value.negative {
+            color: #ef4444;
+        }
+
+        .result-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin-left: 10px;
+        }
+
+        .detail-info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* ==================== 错误提示 ==================== */
+        .error-msg {
+            color: #ef4444;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        /* ==================== CAGR计算器特定样式 ==================== */
+        .calc-row {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .calc-row label {
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+            min-width: 80px;
+        }
+
+        .calc-row input {
+            width: 120px;
+            height: 40px;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .calc-row input.expr-input {
+            width: 280px;
+        }
+
+        .cagr-result {
+            padding: 20px;
+            border-radius: 12px;
+            background: #f5f7fa;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        /* ==================== 响应式设计 ==================== */
+        @media (max-width: 768px) {
+            .calculators-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .calculator-section {
+                padding: 25px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .calc-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .calc-row input {
+                width: 100%;
+            }
+
+            .calc-row input.expr-input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="calculators-wrapper">
+        <!-- ==================== 年化收益率计算器 ==================== -->
+        <div class="calculator-section">
+            <h2 class="section-title">📈 年化数组</h2>
+            <p class="subtitle">输入每年的收益率,计算年化收益率和总收益率</p>
+
+            <div class="input-group">
+                <label for="returns">年度收益率 (%)</label>
+                <input type="text" id="returns" placeholder="0.58,5.23,24,164.8" autocomplete="off"
+                    value="0.58,5.23,24,164.8">
+                <div class="hint">用逗号分隔每年的收益率,支持负数</div>
+            </div>
+
+            <button class="btn-primary" onclick="calculateAnnualReturn()">计算</button>
+            <div class="error-msg" id="annual-error"></div>
+
+            <div class="result-box" id="annual-result">
+                <div class="result-item">
+                    <div class="result-label">年化收益率</div>
+                    <div class="result-value" id="annualized-value"></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">总收益率</div>
+                    <div class="result-value" id="total-value"></div>
+                </div>
+                <div class="detail-info" id="detail-info"></div>
+            </div>
+        </div>
+
+        <!-- ==================== CAGR 计算工具 ==================== -->
+        <div class="calculator-section">
+            <h2 class="section-title">💰 CAGR</h2>
+            <p class="subtitle">计算收益率、年化收益率和自定义表达式</p>
+
+            <div class="calc-row ret-calc">
+                <label>收益率:</label>
+                <input type="text" id="ret-start" placeholder="起始价">
+                <input type="text" id="ret-end" placeholder="终点价">
+            </div>
+
+            <div class="calc-row annual-calc">
+                <label>年化收益:</label>
+                <input type="text" id="ann-start" placeholder="起始价">
+                <input type="text" id="ann-end" placeholder="终点价">
+                <input type="text" id="ann-years" placeholder="年数">
+            </div>
+
+            <!-- <div class="calc-row expr-calc">
+                <label>表达式:</label>
+                <input type="text" class="expr-input" id="expr" placeholder="输入计算表达式">
+            </div> -->
+
+            <div class="cagr-result">
+                Result: <span class="result-text" id="cagr-result-text"></span>
+            </div>
+
+            <button class="btn-clear" onclick="clearCAGR()">CLEAR</button>
+        </div>
+    </div>
+</body>
+
+
+<script>
+    // ==================== 年化收益率计算器 JS ====================
+    const returnsInput = document.getElementById('returns');
+    const annualResultBox = document.getElementById('annual-result');
+    const annualError = document.getElementById('annual-error');
+    const annualizedValue = document.getElementById('annualized-value');
+    const totalValue = document.getElementById('total-value');
+    const detailInfo = document.getElementById('detail-info');
+
+    // 回车键触发计算
+    returnsInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') calculateAnnualReturn();
+    });
+
+    function calculateAnnualReturn() {
+        // 重置显示
+        annualResultBox.classList.remove('show');
+        annualError.classList.remove('show');
+
+        const inputValue = returnsInput.value.trim();
+
+        if (!inputValue) {
+            showError(annualError, '请输入年度收益率');
+            return;
+        }
+
+        // 解析输入
+        const returns = inputValue.split(',').map(s => {
+            const num = parseFloat(s.trim());
+            return isNaN(num) ? null : num;
+        });
+
+        // 验证输入
+        if (returns.some(r => r === null)) {
+            showError(annualError, '输入格式有误,请确保每个收益率都是有效数字');
+            return;
+        }
+
+        if (returns.length === 0) {
+            showError(annualError, '请至少输入一个年度收益率');
+            return;
+        }
+
+        // 计算总收益率
+        let totalReturn = 1;
+        returns.forEach(r => {
+            totalReturn *= (1 + r / 100);
+        });
+        totalReturn = (totalReturn - 1) * 100;
+
+        // 计算年化收益率
+        const years = returns.length;
+        const annualizedReturn = (Math.pow(1 + totalReturn / 100, 1 / years) - 1) * 100;
+
+        // 显示结果
+        annualizedValue.textContent = annualizedReturn.toFixed(2) + '%';
+        totalValue.textContent = totalReturn.toFixed(2) + '%';
+
+        // 设置颜色
+        annualizedValue.className = 'result-value ' + (annualizedReturn >= 0 ? 'positive' : 'negative');
+        totalValue.className = 'result-value ' + (totalReturn >= 0 ? 'positive' : 'negative');
+
+        // 显示详细信息
+        detailInfo.innerHTML = `
+                <strong>计算详情:</strong><br>
+                投资年限: ${years} 年<br>
+                各年收益率: ${returns.map(r => r.toFixed(2) + '%').join(', ')}<br>
+                假设初始投资 10,000 元,最终价值: ${(10000 * (1 + totalReturn / 100)).toFixed(2)} 元
+            `;
+
+        annualResultBox.classList.add('show');
+    }
+
+    function showError(element, message) {
+        element.textContent = message;
+        element.classList.add('show');
+    }
+
+    // ==================== CAGR 计算器 JS ====================
+    const cagrInputs = [
+        document.getElementById('ret-start'),
+        document.getElementById('ret-end'),
+        document.getElementById('ann-start'),
+        document.getElementById('ann-end'),
+        document.getElementById('ann-years'),
+        // document.getElementById('expr')
+    ];
+    const cagrResultText = document.getElementById('cagr-result-text');
+
+    // 实时计算
+    cagrInputs.forEach(input => {
+        input.addEventListener('input', calculateCAGR);
+    });
+
+    function calculateCAGR(event) {
+        const parentRow = event.target.closest('.calc-row');
+        if (!parentRow) return;
+
+        const inputs = Array.from(parentRow.querySelectorAll('input'));
+        const values = inputs.map(inp => inp.value);
+        let result = null;
+
+        if (parentRow.classList.contains('ret-calc')) {
+            // 收益率计算
+            const start = Number(values[0]);
+            const end = Number(values[1]);
+            if (start && end) {
+                result = ((end - start) * 100 / start).toFixed(2) + '%';
+            }
+        } else if (parentRow.classList.contains('annual-calc')) {
+            // 年化收益率计算
+            const start = Number(values[0]);
+            const end = Number(values[1]);
+            const years = Number(values[2]);
+            if (start && end && years) {
+                result = ((Math.pow(end / start, 1 / years) - 1) * 100).toFixed(2) + '%';
+            }
+        } else if (parentRow.classList.contains('expr-calc')) {
+            // 表达式计算
+            try {
+                result = eval(values[0]).toFixed(2);
+            } catch (e) {
+                result = '表达式错误';
+            }
+        }
+
+        if (result) {
+            cagrResultText.textContent = result;
+        }
+    }
+
+    function clearCAGR() {
+        cagrInputs.forEach(input => input.value = '');
+        cagrResultText.textContent = '';
+    }
+
+    // ==================== 控制台监控脚本 ====================
+    (function () {
+        const isDev = location.host.indexOf('code.juejin.cn') === -1 && location.host.indexOf('aicoding.juejin.cn') === -1;
+
+        if (typeof BigInt === 'function' && !BigInt.prototype.toJSON) {
+            BigInt.prototype.toJSON = function () {
+                return this + 'n';
+            };
+        }
+
+        const createCircularReplacer = () => {
+            const seen = new WeakSet();
+            return (key, value) => {
+                if (typeof value === 'object' && value !== null) {
+                    if (seen.has(value)) {
+                        return Object.prototype.toString.call(value);
+                    }
+                    seen.add(value);
+                }
+                return value;
+            };
+        };
+
+        function stringifyLog(...args) {
+            return args.map(arg => {
+                const prototypeString = Object.prototype.toString.call(arg);
+                try {
+                    if (arg && ['[object Object]', '[object Array]'].includes(prototypeString)) {
+                        return JSON.stringify(arg, createCircularReplacer(), 2);
+                    } else if (arg === null || ['string', 'boolean', 'number', 'symbol', 'undefined', 'bigint'].includes(typeof arg)) {
+                        return String(arg);
+                    } else if (arg?.toString) {
+                        return arg.toString();
+                    } else {
+                        return prototypeString;
+                    }
+                } catch (e) {
+                    return prototypeString;
+                }
+            });
+        }
+
+        function stringifyError(error) {
+            if (!error) return '';
+            const stackInfo = error.stack?.toString() || '';
+            return stackInfo ? stackInfo : error.message + '\n';
+        }
+
+        function sendMessage(type, ...args) {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    msgType: 'Console',
+                    type,
+                    value: stringifyLog(...args),
+                    from: 'Runner'
+                }, isDev ? '*' : location.protocol + '//' + 'code.juejin.cn');
+            }
+        }
+
+        function logWindowOnError(event) {
+            let msg = event.message;
+            if (event.filename) {
+                msg += event.filename.replace(location.origin, '');
+            }
+            if (event.lineno || event.colno) {
+                msg += ':' + event.lineno + ':' + event.colno;
+            }
+            sendMessage('error', msg, stringifyError(event.error));
+        }
+
+        function logResourceError(event) {
+            const { target } = event;
+            if (target && ['link', 'video', 'script', 'img', 'audio'].includes(target.localName)) {
+                const src = target.href || target.src || target.currentSrc || '';
+                sendMessage('error', 'GET <' + target.localName + '> error: ' + src);
+            }
+        }
+
+        function logUnhandledRejection(event) {
+            const error = event?.reason ? event.reason : event;
+            sendMessage('error', 'Uncaught (in promise) ', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+            });
+        }
+
+        const handleConsoleMessage = (event) => {
+            const msg = event.data;
+            const expectedOrigin = location.protocol + '//' + 'code.juejin.cn';
+
+            if (!isDev && event.origin !== expectedOrigin) {
+                console.error('event origin ' + event.origin + ' is different from expected:' + expectedOrigin);
+                return;
+            }
+
+            if (msg?.msgType === 'Eval') {
+                const cmd = msg.data || '';
+                let result;
+                try {
+                    result = window.eval('(' + cmd + ')');
+                } catch (e) {
+                    try {
+                        result = window.eval(cmd);
+                    } catch (error) {
+                        sendMessage('error', stringifyError(error));
+                    }
+                }
+                setTimeout(() => {
+                    if (result) {
+                        sendMessage('log', ...stringifyLog(result));
+                    }
+                });
+            }
+        };
+
+        // 初始化监控
+        (() => {
+            const supportType = ['log', 'info', 'warn', 'error', 'table'];
+            const oldConsoleMethod = {};
+
+            supportType.forEach(key => {
+                oldConsoleMethod[key] = window.console[key];
+                window.console[key] = (...args) => {
+                    sendMessage(key, ...args);
+                    oldConsoleMethod[key](...args);
+                };
+            });
+
+            window.addEventListener('error', logWindowOnError, true);
+            window.addEventListener('error', logResourceError, true);
+            window.addEventListener('unhandledrejection', logUnhandledRejection);
+            window.addEventListener('message', handleConsoleMessage);
+        })();
+    })();
+
+</script>
+
+</html>
