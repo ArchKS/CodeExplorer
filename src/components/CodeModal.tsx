@@ -65,7 +65,7 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, onClose }) =>
       onClick={onClose}
     >
       <div 
-        className={`relative w-full ${viewMode === 'preview' ? 'max-w-[95vw]' : 'max-w-5xl'} max-h-[90vh] bg-gray-900 rounded-lg overflow-hidden flex flex-col shadow-2xl cursor-default transition-all duration-300`}
+        className={`relative w-full ${viewMode === 'preview' ? 'max-w-[1500px]' : 'max-w-5xl'} max-h-[90vh] bg-gray-900 rounded-lg overflow-hidden flex flex-col shadow-2xl cursor-default transition-all duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800">
