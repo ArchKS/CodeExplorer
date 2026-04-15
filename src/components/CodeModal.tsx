@@ -65,7 +65,7 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, onClose }) =>
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-5xl max-h-[90vh] bg-gray-900 rounded-lg overflow-hidden flex flex-col shadow-2xl cursor-default"
+        className={`relative w-full ${viewMode === 'preview' ? 'max-w-[95vw]' : 'max-w-5xl'} max-h-[90vh] bg-gray-900 rounded-lg overflow-hidden flex flex-col shadow-2xl cursor-default transition-all duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800">
@@ -121,10 +121,10 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, onClose }) =>
         
         <div className="flex-1 overflow-auto bg-[#1e1e1e] flex flex-col justify-center">
           {viewMode === 'preview' ? (
-            <div className="flex items-center justify-center w-full h-full bg-gray-100">
+            <div className="flex items-center justify-center w-full h-full bg-gray-100 p-8">
               <iframe
                 src={filePath}
-                className="w-full h-[60vh] bg-white shadow-lg border-y border-gray-200"
+                className="w-[90%] h-[60vh] bg-white shadow-lg border border-gray-200"
                 title="HTML Preview"
               />
             </div>

@@ -8,36 +8,51 @@ function App() {
   const [history, setHistory] = useState<FileItem[][]>([]);
   const [selectedFile, setSelectedFile] = useState<{ path: string; name: string } | null>(null);
   const [intros, setIntros] = useState<Record<string, string>>({});
+  const [filter, setFilter] = useState<'all' | 'file' | 'directory'>('all');
 
   const currentItems = useMemo(() => {
+    let items: FileItem[] = [];
     if (history.length === 0) {
-      return [
+      items = [
         ...shortSource.map(item => ({ ...item, section: 'short' })),
         ...longSource.map(item => ({ ...item, section: 'long' }))
       ];
+      if (filter !== 'all') {
+        items = items.filter(item => item.type === filter);
+      }
+    } else {
+      items = history[history.length - 1];
     }
-    const currentFolder = history[history.length - 1];
-    return currentFolder;
-  }, [history]);
+    return items;
+  }, [history, filter]);
 
-  // 自动扫描当前页面文件中的 Intro
+  // 自动扫描当前页面文件或目录（README.md）中的 Intro
   useEffect(() => {
     const fetchIntros = async () => {
-      const filesToFetch = currentItems.filter(
-        item => item.type === 'file' && !intros[item.path]
-      );
+      const itemsToFetch = currentItems.filter(item => !intros[item.path]);
 
-      for (const file of filesToFetch) {
-        try {
-          const response = await fetch(file.path);
-          const text = await response.text();
-          // 匹配 Intro: 后面直到行尾的内容
-          const match = text.match(/Intro:\s*(.*)/i);
-          if (match && match[1]) {
-            setIntros(prev => ({ ...prev, [file.path]: match[1].trim() }));
+      for (const item of itemsToFetch) {
+        let fetchPath = '';
+        if (item.type === 'file') {
+          fetchPath = item.path;
+        } else if (item.type === 'directory') {
+          const readme = item.children?.find(c => c.name.toLowerCase() === 'readme.md');
+          if (readme) {
+            fetchPath = readme.path;
           }
-        } catch (e) {
-          console.error(`Failed to fetch intro for ${file.path}`, e);
+        }
+
+        if (fetchPath) {
+          try {
+            const response = await fetch(fetchPath);
+            const text = await response.text();
+            const match = text.match(/Intro:\s*(.*)/i);
+            if (match && match[1]) {
+              setIntros(prev => ({ ...prev, [item.path]: match[1].trim() }));
+            }
+          } catch (e) {
+            console.error(`Failed to fetch intro for ${item.path}`, e);
+          }
         }
       }
     };
@@ -49,7 +64,12 @@ function App() {
     if (item.type === 'directory') {
       setHistory([...history, item.children || []]);
     } else {
-      setSelectedFile({ path: item.path, name: item.name });
+      const isImage = /\.(png|jpe?g|gif|svg|webp|bmp|ico)$/i.test(item.name);
+      if (isImage) {
+        window.open(item.path, '_blank');
+      } else {
+        setSelectedFile({ path: item.path, name: item.name });
+      }
     }
   };
 
@@ -63,15 +83,32 @@ function App() {
 
   const handleDownload = (e: React.MouseEvent, item: FileItem) => {
     e.stopPropagation();
-    if (item.type === 'file') {
+
+    const triggerDownload = (path: string, name: string) => {
       const link = document.createElement('a');
-      link.href = item.path;
-      link.download = item.name;
+      link.href = path;
+      link.download = name;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } else {
-      alert('Folder download not implemented in pure frontend (requires zipping)');
+    };
+
+    const downloadAll = (files: FileItem[]) => {
+      files.forEach((f) => {
+        if (f.type === 'file') {
+          triggerDownload(f.path, f.name);
+        } else if (f.children) {
+          downloadAll(f.children);
+        }
+      });
+    };
+
+    if (item.type === 'file') {
+      triggerDownload(item.path, item.name);
+    } else if (item.children) {
+      if (confirm(`准备下载文件夹 "${item.name}" 中的所有文件，是否继续？`)) {
+        downloadAll(item.children);
+      }
     }
   };
 
@@ -106,6 +143,35 @@ function App() {
           )}
 
           <div className="flex-1" />
+
+          {history.length === 0 && (
+            <div className="flex bg-gray-100 p-1 rounded-lg mr-4">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
+                  filter === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilter('file')}
+                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
+                  filter === 'file' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Files
+              </button>
+              <button
+                onClick={() => setFilter('directory')}
+                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
+                  filter === 'directory' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Folders
+              </button>
+            </div>
+          )}
           
           <div className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-500 uppercase tracking-widest">
             {history.length === 0 ? 'Root' : `Level ${history.length}`}
