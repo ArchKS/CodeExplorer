@@ -318,6 +318,13 @@ Star: 3
 
         // 批量解析
         let parseBtn = document.getElementById('parseBtn')
+        
+        // 加载缓存
+        const cached = localStorage.getItem('option_calc_data');
+        if (cached) {
+            document.getElementById('batchInput').value = cached;
+        }
+
         setTimeout(() => {
             parseBtn.click();
         }, 300);
@@ -388,15 +395,20 @@ Star: 3
 
             const batch = `${title}:${s},${k},${t},${r},${v},${cost},${x},${y}`;
             document.getElementById('batchInput').value = batch;
+            localStorage.setItem('option_calc_data', batch);
         }
         // 清空
         document.getElementById('clearBtn').onclick = () => {
             document.getElementById('batchInput').value = '';
+            localStorage.removeItem('option_calc_data');
         };
 
         // 回车快捷解析
         document.getElementById('batchInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') document.getElementById('parseBtn').click();
+        });
+        document.getElementById('batchInput').addEventListener('input', () => {
+            localStorage.setItem('option_calc_data', document.getElementById('batchInput').value);
         });
 
         // 切换期权类型
