@@ -11,6 +11,7 @@ Date: 2026.04.15
     <title>期权价值计算器</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
 
     <style>
@@ -59,7 +60,7 @@ Date: 2026.04.15
         }
 
         .table-scroll {
-            max-height: 380px;
+            /* max-height: 380px; */
             overflow-y: auto;
             border-radius: 12px;
         }
@@ -92,6 +93,15 @@ Date: 2026.04.15
 </head>
 
 <body class="py-10 px-4">
+    <!-- 全局下载按钮 -->
+    <div class="fixed top-6 right-6 z-50">
+        <button onclick="downloadPageAsPNG()" 
+            class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-full shadow-lg hover:shadow-xl hover:text-blue-600 hover:border-blue-200 transition-all active:scale-95">
+            <i class="fa fa-camera"></i>
+            <span class="text-sm font-bold">保存为图片</span>
+        </button>
+    </div>
+
     <div class="mx-auto">
         <div class="text-center mb-8">
             <h1 id="mainTitle" class="text-3xl md:text-4xl font-bold text-gray-800 tracking-wide">期权价值计算器</h1>
@@ -1271,6 +1281,71 @@ Date: 2026.04.15
             link.download = `${name}_${new Date().toLocaleDateString()}.png`;
             link.href = tempCanvas.toDataURL('image/png');
             link.click();
+        }
+
+        // 新增全页截图功能
+        async function downloadPageAsPNG() {
+            const btn = event.currentTarget;
+            const originalContent = btn.innerHTML;
+            
+            try {
+                // 1. 改变按钮状态
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 生成中...';
+                btn.disabled = true;
+
+                // 2. 执行截图 (排除按钮自身)
+                const canvas = await html2canvas(document.body, {
+                    backgroundColor: '#f5f7fa',
+                    ignoreElements: (el) => el.closest('.fixed'), 
+                    scale: 2, 
+                    useCORS: true,
+                    logging: false,
+                    onclone: (clonedDoc) => {
+                        // 修复：将所有输入框替换为 div，以解决 html2canvas 渲染 input 文字错位的问题
+                        const originalInputs = document.querySelectorAll('input');
+                        const clonedInputs = clonedDoc.querySelectorAll('input');
+                        
+                        clonedInputs.forEach((input, index) => {
+                            const val = input.value || input.placeholder;
+                            const rect = originalInputs[index].getBoundingClientRect();
+                            const div = clonedDoc.createElement('div');
+                            
+                            // 复制基础类名 (如 border, rounded 等)
+                            div.className = input.className;
+                            
+                            // 关键：清除所有会导致位移的 padding 和 line-height
+                            div.style.paddingTop = '0';
+                            div.style.paddingBottom = '0';
+                            div.style.marginTop = '0';
+                            div.style.marginBottom = '0';
+                            
+                            // 强制使用原始输入的精确高度，并用 line-height 垂直居中
+                            div.style.height = rect.height + 'px';
+                            div.style.lineHeight = (rect.height - 2) + 'px'; // -2 扣除上下边框
+                            div.style.display = 'block';
+                            div.style.overflow = 'hidden';
+                            div.style.backgroundColor = getComputedStyle(originalInputs[index]).backgroundColor;
+
+                            div.textContent = val;
+                            input.parentNode.replaceChild(div, input);
+                        });
+                    }
+                });
+
+                // 3. 触发下载
+                const link = document.createElement('a');
+                const title = document.getElementById('mainTitle').textContent.trim();
+                link.download = `${title}_全页快照.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (e) {
+                console.error('截图失败:', e);
+                alert('截图生成失败，请重试');
+            } finally {
+                // 4. 恢复按钮
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
