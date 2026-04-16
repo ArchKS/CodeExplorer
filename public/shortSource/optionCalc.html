@@ -94,17 +94,17 @@ Date: 2026.04.15
 <body class="py-10 px-4">
     <div class="mx-auto">
         <div class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 tracking-wide">期权价值计算器</h1>
-            <p class="text-gray-500 mt-2">Black-Scholes 模型 · 专业计算</p>
+            <h1 id="mainTitle" class="text-3xl md:text-4xl font-bold text-gray-800 tracking-wide">期权价值计算器</h1>
+            <p class="text-gray-500 mt-2">Black-Scholes 模型</p>
         </div>
 
         <div class="card p-6 md:p-8 mb-8">
             <!-- 批量输入 -->
             <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">格式：标的价格,行权价格,到期天数/到期日,无风险利率,波动率</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">格式：TITLE:标题(可选),标的价格,行权价格,到期天数/日期,利率,波动率,成本,模拟天数,模拟价格</label>
                 <input type="text" id="batchInput"
                     class="w-full px-4 py-3 border border-gray-300 input-box batch-input"
-                    value="20,18,20,4,57.24">
+                    value="LC2607_C180000:17,18,51,4,57.24,1.1605,15,19">
                 <div class="flex gap-3 mt-3">
                     <button id="parseBtn" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm">
                         <i class="fa fa-magic mr-1"></i> 解析并填充
@@ -146,7 +146,7 @@ Date: 2026.04.15
                     <label class="block text-sm font-medium text-gray-700 mb-2">到期日期</label>
                     <input type="text" id="expiryDate" value="" placeholder="例如：2026.06.05"
                         class="w-full px-4 py-3 border border-gray-300 input-box">
-                    <div id="daysHint" class="text-xs text-gray-500 mt-2 min-h-[20px]">
+                    <div id="daysHint" class="text-xs hidden text-gray-500 mt-2 min-h-[20px]">
                         支持输入 2026.06.05 / 2026-06-05 / 2026/06/05
                     </div>
                 </div>
@@ -165,6 +165,50 @@ Date: 2026.04.15
                     <input type="number" id="costPrice" step="1" min="0" value="" placeholder="购入价格"
                         class="w-full px-4 py-3 border border-gray-300 input-box bg-blue-50">
                 </div>
+            </div>
+
+            <!-- 情景模拟 (新功能) -->
+            <div class="mb-7 p-5 bg-indigo-50 rounded-xl border border-indigo-100">
+                <h3 class="text-sm font-bold text-indigo-800 mb-4 flex items-center gap-2">
+                    <i class="fa fa-magic"></i> 情景模拟预测
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 items-end">
+                    <div>
+                        <label class="block text-xs font-semibold text-indigo-600 mb-2">X天之后 </label>
+                        <input type="number" id="xDaysLater" placeholder="如：20"
+                            class="w-full px-4 py-2 border border-indigo-200 input-box text-sm"  step="5">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-indigo-600 mb-2">标的涨跌至 </label>
+                        <input type="number" id="targetPriceY" placeholder="如：20"
+                            class="w-full px-4 py-2 border border-indigo-200 input-box text-sm"  step="1">
+                    </div>
+                    <div class="col-span-1 md:col-span-2 lg:col-span-4 flex gap-12 items-center px-6 py-2  ml-4">
+                        <div>
+                            <p class="block text-xs font-semibold text-indigo-600 mb-2">预期理论价值</p>
+                            <p id="scenarioValue" class="text-lg font-bold text-indigo-600 ">--</p>
+                        </div>
+                        <div class="w-px h-8 bg-gray-100"></div>
+                        <div>
+                            <p class="block text-xs font-semibold text-indigo-600 mb-2">预期盈亏 / 收益率</p>
+                            <div class="flex items-baseline gap-2">
+                                <span id="scenarioPL" class="text-lg font-bold text-gray-400">--</span>
+                                <span id="scenarioROI" class="text-sm font-medium text-gray-400">--</span>
+                            </div>
+                        </div>
+                         <div class="w-px h-8 bg-gray-100"></div>
+                         <div>
+                            <p class="block text-xs font-semibold text-indigo-600 mb-2">标的上涨幅度</p>
+                            <p id="securityRatio" class="text-lg font-bold text-indigo-600 ">--</p>
+                        </div>
+                         <div class="w-px h-8 bg-gray-100"></div>
+                        <div>
+                            <p class="block text-xs font-semibold text-indigo-600 mb-2">杠杆率</p>
+                            <p id="leverageRatio" class="text-lg font-bold text-indigo-600 ">--</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-indigo-400 mt-3 italic">* 模拟在保持波动率和利率不变的情况下，时间流逝 X 天且股价变动至 Y 时的期权表现</p>
             </div>
 
 
@@ -265,15 +309,38 @@ Date: 2026.04.15
             parseBtn.click();
         }, 300);
         parseBtn.onclick = () => {
-            const text = document.getElementById('batchInput').value.trim();
+            let text = document.getElementById('batchInput').value.trim();
             if (!text) return;
 
-            const arr = text.split(',').map(x => x.trim());
+            let title = "";
+            let dataPart = text;
+
+            // 处理 TITLE:DATA 格式
+            const colonIndex = text.indexOf(':');
+            if (colonIndex !== -1) {
+                title = text.substring(0, colonIndex).trim();
+                dataPart = text.substring(colonIndex + 1).trim();
+                if (title) {
+                    document.getElementById('mainTitle').textContent = title;
+                }
+            }
+
+            const arr = dataPart.split(',').map(x => x.trim());
             if (arr.length >= 5) {
-                document.getElementById('stockPrice').value = parseFloat(arr[0]) || '';
-                document.getElementById('strikePrice').value = parseFloat(arr[1]) || '';
-                document.getElementById('rate').value = parseFloat(arr[3]) || '';
-                document.getElementById('vol').value = parseFloat(arr[4]) || '';
+                document.getElementById('stockPrice').value = arr[0] || '';
+                document.getElementById('strikePrice').value = arr[1] || '';
+                document.getElementById('rate').value = arr[3] || '';
+                document.getElementById('vol').value = arr[4] || '';
+
+                if (arr.length >= 6) {
+                    document.getElementById('costPrice').value = arr[5] || '';
+                }
+                if (arr.length >= 7) {
+                    document.getElementById('xDaysLater').value = arr[6] || '';
+                }
+                if (arr.length >= 8) {
+                    document.getElementById('targetPriceY').value = arr[7] || '';
+                }
 
                 const third = arr[2] || '';
                 const expiryDate = parseDateInput(third);
@@ -282,13 +349,33 @@ Date: 2026.04.15
                     document.getElementById('expiryDate').value = formatDate(expiryDate);
                     syncFromDate();
                 } else {
-                    document.getElementById('days').value = parseFloat(third) || '';
+                    document.getElementById('days').value = third || '';
                     syncFromDays();
                 }
 
                 calc();
             }
         };
+
+        // 同步个别输入到批量输入框
+        function syncToBatchInput() {
+            const title = document.getElementById('mainTitle').textContent.trim();
+            const s = document.getElementById('stockPrice').value;
+            const k = document.getElementById('strikePrice').value;
+            const expiry = document.getElementById('expiryDate').value;
+            const days = document.getElementById('days').value;
+            // 优先显示日期，如果没有则显示天数
+            const t = expiry || days;
+            
+            const r = document.getElementById('rate').value;
+            const v = document.getElementById('vol').value;
+            const cost = document.getElementById('costPrice').value;
+            const x = document.getElementById('xDaysLater').value;
+            const y = document.getElementById('targetPriceY').value;
+
+            const batch = `${title}:${s},${k},${t},${r},${v},${cost},${x},${y}`;
+            document.getElementById('batchInput').value = batch;
+        }
         // 清空
         document.getElementById('clearBtn').onclick = () => {
             document.getElementById('batchInput').value = '';
@@ -317,20 +404,24 @@ Date: 2026.04.15
             calc();
         }
 
-        document.getElementById('stockPrice').addEventListener('input', calc);
-        document.getElementById('strikePrice').addEventListener('input', calc);
-        document.getElementById('rate').addEventListener('input', calc);
-        document.getElementById('vol').addEventListener('input', calc);
-        document.getElementById('costPrice').addEventListener('input', calc);
+        document.getElementById('stockPrice').addEventListener('input', () => { calc(); syncToBatchInput(); });
+        document.getElementById('strikePrice').addEventListener('input', () => { calc(); syncToBatchInput(); });
+        document.getElementById('rate').addEventListener('input', () => { calc(); syncToBatchInput(); });
+        document.getElementById('vol').addEventListener('input', () => { calc(); syncToBatchInput(); });
+        document.getElementById('costPrice').addEventListener('input', () => { calc(); syncToBatchInput(); });
+        document.getElementById('xDaysLater').addEventListener('input', () => { calc(); syncToBatchInput(); });
+        document.getElementById('targetPriceY').addEventListener('input', () => { calc(); syncToBatchInput(); });
 
         document.getElementById('days').addEventListener('input', () => {
             syncFromDays();
             calc();
+            syncToBatchInput();
         });
 
         document.getElementById('expiryDate').addEventListener('input', () => {
             syncFromDate();
             calc();
+            syncToBatchInput();
         });
 
         document.getElementById('calc').onclick = calc;
@@ -480,7 +571,7 @@ Date: 2026.04.15
             const hint = document.getElementById('daysHint');
             if (!hint) return;
             hint.textContent = text;
-            hint.className = `text-xs mt-2 min-h-[20px] ${isError ? 'text-red-600' : 'text-gray-500'}`;
+            hint.className = `text-xs hidden mt-2 min-h-[20px] ${isError ? 'text-red-600' : 'text-gray-500'}`;
         }
 
         // days -> expiryDate
@@ -1056,7 +1147,7 @@ Date: 2026.04.15
                 tr.innerHTML = `
                 <td class="px-4 py-2.5 text-gray-500">${labels[i]}</td>
                 <td class="px-4 py-2.5">${remainDays}天</td>
-                <td class="px-4 py-2.5 font-medium">${values[i].toFixed(4)}</td>
+                <td class="px-4 py-2.5 font-medium">${values[i].toFixed(2)}</td>
                 <td class="px-4 py-2.5 font-medium ${changeColor}">${changeText}</td>
                 <td class="px-4 py-2.5 font-medium ${cumColor}">${cumText}</td>
             `;
@@ -1090,7 +1181,7 @@ Date: 2026.04.15
             if (!isNaN(cost) && cost > 0) {
                 const diff = res.price - cost;
                 const roi = (diff / cost) * 100;
-                plEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(4);
+                plEl.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(2);
                 plEl.className = `text-xl font-bold ${diff >= 0 ? 'text-green-600' : 'text-red-600'}`;
                 roiEl.textContent = (roi >= 0 ? '+' : '') + roi.toFixed(2) + '%';
                 roiEl.className = `text-lg font-medium ${roi >= 0 ? 'text-green-600' : 'text-red-600'}`;
@@ -1099,6 +1190,56 @@ Date: 2026.04.15
                 plEl.className = 'text-xl font-bold text-gray-400';
                 roiEl.textContent = '--';
                 roiEl.className = 'text-lg font-medium text-gray-400';
+            }
+
+            // 情景模拟计算
+            const xDays = +document.getElementById('xDaysLater').value || 0;
+            const targetY = +document.getElementById('targetPriceY').value || 0;
+            const svEl = document.getElementById('scenarioValue');
+            const splEl = document.getElementById('scenarioPL');
+            const sroiEl = document.getElementById('scenarioROI');
+            const srEl = document.getElementById('securityRatio');
+            const levEl = document.getElementById('leverageRatio');
+
+            if (xDays >= 0 && targetY > 0) {
+                const remainT = Math.max(0, (days - xDays) / 365);
+                const sRes = bs(targetY, K, remainT, r / 100, s / 100, type);
+                svEl.textContent = sRes.price.toFixed(4);
+
+                // 计算标的上涨幅度
+                const sRatio = ((targetY - S) / S) * 100;
+                srEl.textContent = (sRatio >= 0 ? '+' : '') + sRatio.toFixed(2) + '%';
+                srEl.className = `text-lg font-bold ${sRatio >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+                // 计算杠杆率 (X天后期权的理论价值 / 当前期权的理论价值)
+                if (res.price > 0) {
+                    const leverage = sRes.price / res.price;
+                    levEl.textContent = leverage.toFixed(2) + 'x';
+                    levEl.className = 'text-lg font-bold text-indigo-600';
+                } else {
+                    levEl.textContent = '--';
+                }
+
+                if (!isNaN(cost) && cost > 0) {
+                    const sDiff = sRes.price - cost;
+                    const sRoi = (sDiff / cost) * 100;
+                    splEl.textContent = (sDiff >= 0 ? '+' : '') + sDiff.toFixed(2);
+                    splEl.className = `text-lg font-bold ${sDiff >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                    sroiEl.textContent = `(${sRoi >= 0 ? '+' : ''}${sRoi.toFixed(2)}%)`;
+                    sroiEl.className = `text-sm font-medium ${sRoi >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                } else {
+                    splEl.textContent = '--';
+                    splEl.className = 'text-lg font-bold text-gray-400';
+                    sroiEl.textContent = '--';
+                    sroiEl.className = 'text-sm font-medium text-gray-400';
+                }
+            } else {
+                svEl.textContent = '--';
+                splEl.textContent = '--';
+                sroiEl.textContent = '--';
+                srEl.textContent = '--';
+                srEl.className = 'text-lg font-bold text-gray-400';
+                levEl.textContent = '--';
             }
 
             const { labels, values, pctChanges } = generateData(S, K, days, r, s, type);
