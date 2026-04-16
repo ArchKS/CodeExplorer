@@ -1,4 +1,5 @@
 Intro: 调仓可视化
+Prev: ../img/holdvisPrev.png
 Usage: 
     1. 转化raw.txt的原始excel复制的文本到assets.csv
     python3 convert.py

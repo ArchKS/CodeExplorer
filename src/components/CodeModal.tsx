@@ -137,13 +137,13 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevImage, in
           </div>
         </div>
         
-        <div className="flex-1 overflow-auto bg-[#1e1e1e] flex flex-col justify-center">
+        <div className="flex-1 overflow-auto bg-[#1e1e1e] flex flex-col">
           {viewMode === 'image' ? (
-            <div className="flex items-center justify-center w-full h-full bg-gray-900 p-4">
+            <div className="flex justify-center w-full min-h-full bg-gray-900 p-4">
               <img 
                 src={prevImage} 
                 alt="Preview" 
-                className="max-w-full max-h-full object-contain shadow-2xl rounded"
+                className="max-w-full h-auto object-contain shadow-2xl rounded self-start"
               />
             </div>
           ) : viewMode === 'preview' ? (

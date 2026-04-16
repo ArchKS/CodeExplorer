@@ -1,5 +1,6 @@
 """
 Name: search_tool.py
+Tag: 系统工具
 Intro: 搜索指定目录下的文件或内容
 Usage: 
     查找文件：D 盘下 release/dist 里的 cfhlist.js
@@ -8,6 +9,7 @@ Usage:
     查找内容：D 盘下 src 里包含 xfs_token 的文件
     python3 search_tool.py --mode "content" --root "D:\\" --content "xfs_token"  --folders src
 Author: Zendu
+
 
 """
 

@@ -1,6 +1,7 @@
 // Intro: 道客巴巴下载PDF
 // Usage: 复制粘贴到控制台
 // Date: 2026.04.14
+// Tag: 脚本
 
 $('#continueButton').click()
 var keeps = $("#pageContainer").parentsUntil('body').toArray().concat($("#pageContainer").children().toArray())

@@ -1,5 +1,6 @@
 // Intro: 财务报表同比显示油猴脚本
 // Prev: ../img/EmSheetPrev.png
+// Tag: 投资
 // 油猴脚本
 
 // ==UserScript==

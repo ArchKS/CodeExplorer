@@ -1,0 +1,131 @@
+<!-- 
+Intro: 海螺水泥产能地域分布 
+Date: 2026.04.07
+Prev: ../img/HaiLuoCementPrev.png
+Tag: 公司
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>海螺水泥熟料产能全国分布图</title>
+  <!-- 引入 ECharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- 引入中国地图数据 -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 15px;
+      background: #f5f7fa;
+    }
+
+    #main {
+      width: 100%;
+      height: 88vh;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="main"></div>
+
+  <script>
+    var myChart = echarts.init(document.getElementById('main'));
+
+    // 海螺水泥各省份产能数据（已拆分合并省份）
+    var rawData = [
+      { "name": "安徽", "value": 8154.6, "market": "42.7%", "desc": "全国最大熟料生产基地，池州海螺（全球最大单体水泥厂）", "percent": "31.43%" },
+      { "name": "江苏", "value": 2000, "market": "36.5%", "desc": "以粉磨站为主，依托长江水运，覆盖长三角核心市场", "percent": "7.71%" },
+      { "name": "浙江", "value": 1800, "market": "31.8%", "desc": "粉磨站密集，服务杭州湾经济带", "percent": "6.94%" },
+      { "name": "湖北", "value": 1600, "market": "-", "desc": "长江沿线熟料基地，连接华东与华中市场", "percent": "6.17%" },
+      { "name": "江西", "value": 1500, "market": "区域龙头", "desc": "长江中游重要熟料基地，服务华东与华中市场", "percent": "5.78%" },
+      { "name": "湖南", "value": 1400, "market": "-", "desc": "长江中游熟料基地，辐射华南市场", "percent": "5.40%" },
+      { "name": "四川", "value": 1300, "market": "-", "desc": "达州、广元等熟料基地，覆盖西南市场", "percent": "5.01%" },
+      { "name": "福建", "value": 1200, "market": "沿海布局", "desc": "覆盖东南沿海市场，辐射台湾海峡区域", "percent": "4.63%" },
+      { "name": "河南", "value": 1000, "market": "-", "desc": "近年重点布局豫东南，通过水运进入市场", "percent": "3.85%" },
+      { "name": "贵州", "value": 900, "market": "-", "desc": "近年有部分产能退出，优化布局", "percent": "3.47%" },
+      { "name": "山西", "value": 800, "market": "-", "desc": "华北地区重要熟料基地，服务京津冀市场", "percent": "3.08%" },
+      { "name": "广东", "value": 750, "market": "-", "desc": "沿海布局，服务珠三角经济区（广东/广西合计1500万吨）", "percent": "2.89%" },
+      { "name": "广西", "value": 750, "market": "-", "desc": "服务北部湾经济区（广东/广西合计1500万吨）", "percent": "2.89%" },
+      { "name": "云南", "value": 700, "market": "-", "desc": "文山海螺等绿色工厂，服务西南与东南亚市场", "percent": "2.70%" },
+      { "name": "陕西", "value": 450, "market": "-", "desc": "西北市场重要支点（陕西/甘肃合计900万吨）", "percent": "1.73%" },
+      { "name": "甘肃", "value": 450, "market": "-", "desc": "西北市场重要支点（陕西/甘肃合计900万吨）", "percent": "1.73%" },
+      { "name": "山东", "value": 400, "market": "-", "desc": "环渤海布局（山东/河北合计800万吨）", "percent": "1.54%" },
+      { "name": "西藏", "value": 390, "market": "30%", "desc": "八宿、山南、林芝等基地，占西藏总产能30%", "percent": "1.50%" },
+      { "name": "河北", "value": 400, "market": "-", "desc": "服务京津冀与山东半岛市场（山东/河北合计800万吨）", "percent": "1.54%" }
+      // 8.5%
+    ]
+
+    // 计算总产能
+    var totalValue = rawData.reduce((sum, item) => sum + item.value, 0);
+
+    // 计算占比并生成最终数据
+    var data = rawData.map(item => {
+      return {
+        ...item,
+        percent: ((item.value / totalValue) * 100).toFixed(2) + '%'
+      };
+    });
+
+    console.log(data);
+
+    var option = {
+      title: {
+        text: '海螺水泥 - 全国熟料产能分布图',
+        subtext: '总产能：' + totalValue.toFixed(1) + ' 万吨 | 颜色越深 = 产能越大',
+        left: 'center',
+        textStyle: { fontSize: 20, color: '#333' }
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: function (params) {
+          const d = params.data;
+          if (!d) return params.name + ': 暂无数据';
+          return `
+            <div style="padding:5px 8px;">
+              <strong>${d.name}</strong><br/>
+              熟料产能：${d.value} 万吨<br/>
+              产能占比：<span style="color:#00acc1;font-weight:bold;">${d.percent}</span><br/>
+              市场地位：${d.market || '无数据'}<br/>
+              布局特点：${d.desc || '暂无描述'}
+            </div>
+          `;
+        }
+      },
+      visualMap: {
+        type: 'piecewise',
+        left: 'left',
+        bottom: '5%',
+        pieces: [
+          { min: 5000, label: '> 5000 万吨 (特大型基地)', color: '#006064' },
+          { min: 1500, max: 5000, label: '1500 - 5000 万吨 (大型区域)', color: '#00838f' },
+          { min: 1000, max: 1500, label: '1000 - 1500 万吨 (核心市场)', color: '#00acc1' },
+          { min: 500, max: 1000, label: '500 - 1000 万吨 (重要支点)', color: '#4dd0e1' },
+          { min: 1, max: 500, label: '< 500 万吨 (战略布局)', color: '#b2ebf2' }
+        ],
+        textStyle: { color: '#333' }
+      },
+      series: [
+        {
+          name: '熟料产能（万吨）',
+          type: 'map',
+          map: 'china',
+          roam: false,
+          label: { show: true, fontSize: 10 }, // 显示省份名称
+          data: data,
+          emphasis: { label: { color: '#000', fontWeight: 'bold' } }
+        }
+      ]
+    };
+
+    myChart.setOption(option);
+    // 窗口自适应
+    window.addEventListener('resize', () => myChart.resize());
+  </script>
+</body>
+
+</html>

@@ -36,7 +36,7 @@ const CodeCard: React.FC<CodeCardProps> = ({ name, type, intro, hasPrev, onClick
         </button>
       </div>
 
-      <div className="pt-4 flex flex-col items-center gap-2">
+      <div className="pt-4 flex flex-col items-center gap-2 w-full text-center">
         {type === 'file' ? (
           <FileCode size={40} className="text-blue-500" />
         ) : (
@@ -44,21 +44,15 @@ const CodeCard: React.FC<CodeCardProps> = ({ name, type, intro, hasPrev, onClick
         )}
 
         {intro && (
-          <p className=" text-sm mt-4 font-bold text-gray-800 line-clamp-2 px-3 text-center leading-tight">
+          <p className="text-sm mt-2 font-bold text-gray-800 line-clamp-2 px-1 leading-tight">
             {intro}
           </p>
         )}
 
-        <span className="text-[11px] text-gray-500 truncate w-full text-center px-2">
+        <span className="text-[11px] text-gray-400 truncate w-full mt-1 px-2">
           {name}
         </span>
       </div>
-
-
-
-      {/* <div className="mt-auto pb-3 text-[10px] uppercase tracking-widest text-gray-400 font-bold">
-        {type}
-      </div> */}
     </div>
   );
 };
