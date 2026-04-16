@@ -7,7 +7,7 @@ import { CodeModal } from './components/CodeModal';
 export function App() {
   const [history, setHistory] = useState<FileItem[][]>([]);
   const [selectedFile, setSelectedFile] = useState<{ path: string; name: string; prev?: string; initialMode?: 'source' | 'image' } | null>(null);
-  const [metadata, setMetadata] = useState<Record<string, { intro?: string; date?: string; prev?: string; tag?: string }>>({});
+  const [metadata, setMetadata] = useState<Record<string, { intro?: string; date?: string; prev?: string; tag?: string; star?: number }>>({});
   const [filter, setFilter] = useState<'all' | 'file' | 'directory'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -28,20 +28,30 @@ export function App() {
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      items = items.filter(item => 
-        item.name.toLowerCase().includes(query) || 
+      items = items.filter(item =>
+        item.name.toLowerCase().includes(query) ||
         (metadata[item.path]?.intro && metadata[item.path].intro!.toLowerCase().includes(query)) ||
         (metadata[item.path]?.tag && metadata[item.path].tag!.toLowerCase().includes(query))
       );
     }
 
     return [...items].sort((a, b) => {
+      // 1. 目录始终排在最后
       if (a.type !== b.type) return a.type === 'directory' ? 1 : -1;
+
+      // 2. 优先按 Star 数量降序排 (越多越靠前)
+      const starA = metadata[a.path]?.star || 0;
+      const starB = metadata[b.path]?.star || 0;
+      if (starA !== starB) return starB - starA;
+
+      // 3. 其次按日期降序排
       const dateA = metadata[a.path]?.date || '';
       const dateB = metadata[b.path]?.date || '';
-      if (dateA && dateB) return dateB.localeCompare(dateA);
-      if (dateA) return -1;
-      if (dateB) return 1;
+      if (dateA && dateB && dateA !== dateB) return dateB.localeCompare(dateA);
+      if (dateA && !dateB) return -1;
+      if (!dateA && dateB) return 1;
+
+      // 4. 最后按名称升序排
       return a.name.localeCompare(b.name);
     });
   }, [history, filter, searchQuery, metadata]);
@@ -68,6 +78,7 @@ export function App() {
     return result;
   }, [filteredItems, history.length, metadata]);
 
+
   useEffect(() => {
     const fetchMetadata = async () => {
       const itemsToFetch = filteredItems.filter(item => !metadata[item.path]);
@@ -87,11 +98,14 @@ export function App() {
             const dateMatch = text.match(/Date:\s*(.*)/i);
             const prevMatch = text.match(/Prev:\s*(.*)/i);
             const tagMatch = text.match(/Tag:\s*(.*)/i);
-            
-            const newMeta: { intro?: string; date?: string; prev?: string; tag?: string } = {};
+            const starMatch = text.match(/Star:\s*(\d+)/i);
+
+            const newMeta: { intro?: string; date?: string; prev?: string; tag?: string; star?: number } = { star: 0 };
             if (introMatch) newMeta.intro = introMatch[1].trim();
             if (dateMatch) newMeta.date = dateMatch[1].trim();
             if (tagMatch) newMeta.tag = tagMatch[1].trim();
+            if (starMatch) newMeta.star = parseInt(starMatch[1], 10);
+
             if (prevMatch) {
               const rawPath = prevMatch[1].trim();
               if (rawPath.startsWith('.')) {
@@ -153,8 +167,8 @@ export function App() {
         <div className="max-w-7xl mx-auto">
           <header className="mb-12 text-center">
             <div className="flex items-center justify-center gap-3 mb-2">
-               <Layers className="text-blue-600" size={32} />
-               <h1 className="text-4xl font-black text-gray-900">Code Library</h1>
+              <Layers className="text-blue-600" size={32} />
+              <h1 className="text-4xl font-black text-gray-900">Code Library</h1>
             </div>
             <p className="text-lg text-gray-500 font-medium">Automated source code gallery & interactive explorer</p>
           </header>
@@ -192,16 +206,25 @@ export function App() {
                     <span className="px-2.5 py-0.5 bg-gray-200 text-gray-600 text-xs font-bold rounded-md uppercase">{items.length}</span>
                   </div>
                 )}
-                <div className={history.length == 0 ? "max-w-[270px] space-y-8": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"}>
+                <div className={history.length == 0 ? "max-w-[270px] space-y-8" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"}>
                   {items.map((item, index) => (
-                    <CodeCard key={`${item.path}-${index}`} name={item.name} type={item.type} intro={metadata[item.path]?.intro} hasPrev={!!metadata[item.path]?.prev} onClick={() => handleItemClick(item)} onDownload={(e) => handleDownload(e, item)} onPreviewImage={(e) => handlePreviewImage(e, item)} />
+                    <CodeCard
+                      key={`${item.path}-${index}`}
+                      name={item.name}
+                      type={item.type}
+                      intro={metadata[item.path]?.intro}
+                      hasPrev={!!metadata[item.path]?.prev}
+                      star={metadata[item.path]?.star}
+                      onClick={() => handleItemClick(item)}
+                      onDownload={(e) => handleDownload(e, item)}
+                      onPreviewImage={(e) => handlePreviewImage(e, item)} />
                   ))}
                 </div>
               </section>
             ))}
             {filteredItems.length === 0 && <div className="py-32 text-center">
-               <div className="text-gray-200 text-6xl mb-4">Empty</div>
-               <p className="text-gray-400 font-mono">No matching files found in this view</p>
+              <div className="text-gray-200 text-6xl mb-4">Empty</div>
+              <p className="text-gray-400 font-mono">No matching files found in this view</p>
             </div>}
           </div>
         </div>

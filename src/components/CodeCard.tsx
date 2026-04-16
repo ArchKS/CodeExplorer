@@ -1,22 +1,31 @@
 import React from 'react';
-import { FileCode, Folder, Download, Image as ImageIcon } from 'lucide-react';
+import { FileCode, Folder, Download, Image as ImageIcon,Star } from 'lucide-react';
 
 interface CodeCardProps {
   name: string;
   type: 'file' | 'directory';
   intro?: string;
+  star?: number;
   hasPrev?: boolean;
   onClick: () => void;
   onDownload: (e: React.MouseEvent) => void;
   onPreviewImage?: (e: React.MouseEvent) => void;
 }
 
-export const CodeCard: React.FC<CodeCardProps> = ({ name, type, intro, hasPrev, onClick, onDownload, onPreviewImage }) => {
+export const CodeCard: React.FC<CodeCardProps> = ({ name, type, intro, hasPrev, star, onClick, onDownload, onPreviewImage }) => {
+  console.log(star);
   return (
     <div
       onClick={onClick}
       className="group relative bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer flex flex-col items-center justify-start min-h-[160px] gap-3"
     >
+      {star && star > 0 ? (
+        <div className="absolute top-3 left-3 flex gap-0.5 pointer-events-none">
+          {[...Array(star)].map((_, i) => (
+            <Star key={i} size={14} className="fill-yellow-400 text-yellow-400 drop-shadow-sm" />
+          ))}
+        </div>
+      ):null}
       <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         {hasPrev && onPreviewImage && (
           <button

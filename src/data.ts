@@ -4,6 +4,7 @@ export interface FileItem {
   type: 'file' | 'directory';
   intro?: string;
   children?: FileItem[];
+  star?:number
 }
 
 // 自动扫描 shortSource 下的一级文件

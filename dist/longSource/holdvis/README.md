@@ -1,6 +1,7 @@
 Intro: 调仓可视化
 Prev: ../img/holdvisPrev.png
 Tag: 投资工具
+Star: 3
 Usage: 
     1. 转化raw.txt的原始excel复制的文本到assets.csv
     python3 convert.py

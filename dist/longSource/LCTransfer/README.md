@@ -1,5 +1,6 @@
 Intro: 局域网文件传输
 Tag: 系统工具
+Star: 5
 Usage: 
     执行：python3 app.py
     打包双击build_exe.bat
