@@ -1283,66 +1283,65 @@ Date: 2026.04.15
             link.click();
         }
 
-        // 新增全页截图功能
+        // 使用 html2canvas 实现完美对齐的全页截图
         async function downloadPageAsPNG() {
             const btn = event.currentTarget;
             const originalContent = btn.innerHTML;
             
             try {
-                // 1. 改变按钮状态
                 btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 生成中...';
                 btn.disabled = true;
 
-                // 2. 执行截图 (排除按钮自身)
                 const canvas = await html2canvas(document.body, {
                     backgroundColor: '#f5f7fa',
-                    ignoreElements: (el) => el.closest('.fixed'), 
-                    scale: 2, 
+                    ignoreElements: (el) => el.closest('.fixed') || el.tagName === 'BUTTON' && el.innerText.includes('保存为图片'),
+                    scale: 2,
                     useCORS: true,
                     logging: false,
                     onclone: (clonedDoc) => {
-                        // 修复：将所有输入框替换为 div，以解决 html2canvas 渲染 input 文字错位的问题
                         const originalInputs = document.querySelectorAll('input');
                         const clonedInputs = clonedDoc.querySelectorAll('input');
                         
                         clonedInputs.forEach((input, index) => {
+                            const originalStyle = getComputedStyle(originalInputs[index]);
                             const val = input.value || input.placeholder;
-                            const rect = originalInputs[index].getBoundingClientRect();
-                            const div = clonedDoc.createElement('div');
                             
-                            // 复制基础类名 (如 border, rounded 等)
-                            div.className = input.className;
+                            // 创建容器 div
+                            const wrapper = clonedDoc.createElement('div');
+                            wrapper.className = input.className;
                             
-                            // 关键：清除所有会导致位移的 padding 和 line-height
-                            div.style.paddingTop = '0';
-                            div.style.paddingBottom = '0';
-                            div.style.marginTop = '0';
-                            div.style.marginBottom = '0';
+                            // 强制清除可能干扰的 padding，改用 flex 居中
+                            wrapper.style.paddingTop = '0';
+                            wrapper.style.paddingBottom = '0';
+                            wrapper.style.display = 'flex';
+                            wrapper.style.alignItems = 'center';
+                            wrapper.style.justifyContent = 'flex-start';
+                            wrapper.style.height = originalStyle.height;
+                            wrapper.style.backgroundColor = originalStyle.backgroundColor;
                             
-                            // 强制使用原始输入的精确高度，并用 line-height 垂直居中
-                            div.style.height = rect.height + 'px';
-                            div.style.lineHeight = (rect.height - 2) + 'px'; // -2 扣除上下边框
-                            div.style.display = 'block';
-                            div.style.overflow = 'hidden';
-                            div.style.backgroundColor = getComputedStyle(originalInputs[index]).backgroundColor;
+                            // 创建文字 span
+                            const span = clonedDoc.createElement('span');
+                            span.textContent = val;
+                            span.style.paddingLeft = originalStyle.paddingLeft;
+                            span.style.fontSize = originalStyle.fontSize;
+                            span.style.color = originalStyle.color;
+                            span.style.fontFamily = originalStyle.fontFamily;
 
-                            div.textContent = val;
-                            input.parentNode.replaceChild(div, input);
+                            wrapper.appendChild(span);
+                            input.parentNode.replaceChild(wrapper, input);
                         });
                     }
                 });
 
-                // 3. 触发下载
                 const link = document.createElement('a');
                 const title = document.getElementById('mainTitle').textContent.trim();
-                link.download = `${title}_全页快照.png`;
+                link.download = `${title}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             } catch (e) {
                 console.error('截图失败:', e);
                 alert('截图生成失败，请重试');
             } finally {
-                // 4. 恢复按钮
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
             }
