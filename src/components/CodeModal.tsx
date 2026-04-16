@@ -1,20 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { X, Download, Copy, Check, Eye, Code } from 'lucide-react';
+import { X, Download, Copy, Check, Eye, Code, Image as ImageIcon } from 'lucide-react';
 
 interface CodeModalProps {
   filePath: string;
   fileName: string;
+  prevImage?: string;
+  initialMode?: 'source' | 'image';
   onClose: () => void;
 }
 
-const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, onClose }) => {
+const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevImage, initialMode, onClose }) => {
   const [code, setCode] = useState<string>('Loading...');
   const [language, setLanguage] = useState<string>('javascript');
   const [copied, setCopied] = useState(false);
   const isHtml = fileName.toLowerCase().endsWith('.html');
-  const [viewMode, setViewMode] = useState<'source' | 'preview'>(isHtml ? 'preview' : 'source');
+  const [viewMode, setViewMode] = useState<'source' | 'preview' | 'image'>(
+    initialMode || (isHtml ? 'preview' : 'source')
+  );
 
   useEffect(() => {
     const fetchCode = async () => {
@@ -93,6 +97,20 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, onClose }) =>
                 </button>
               </div>
             )}
+            {prevImage && (
+              <button
+                onClick={() => setViewMode(viewMode === 'image' ? (isHtml ? 'preview' : 'source') : 'image')}
+                className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-bold transition-all border ${
+                  viewMode === 'image' 
+                    ? 'bg-purple-600 text-white border-purple-400 shadow-inner' 
+                    : 'bg-gray-700 text-purple-300 border-purple-500/30 hover:bg-gray-600 hover:text-white'
+                }`}
+                title="Preview Result Image"
+              >
+                <ImageIcon size={14} />
+                {viewMode === 'image' ? 'Close Preview' : 'Image Preview'}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -120,7 +138,15 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, onClose }) =>
         </div>
         
         <div className="flex-1 overflow-auto bg-[#1e1e1e] flex flex-col justify-center">
-          {viewMode === 'preview' ? (
+          {viewMode === 'image' ? (
+            <div className="flex items-center justify-center w-full h-full bg-gray-900 p-4">
+              <img 
+                src={prevImage} 
+                alt="Preview" 
+                className="max-w-full max-h-full object-contain shadow-2xl rounded"
+              />
+            </div>
+          ) : viewMode === 'preview' ? (
             <div className="flex items-center justify-center w-full h-full bg-gray-100 p-8">
               <iframe
                 src={filePath}

@@ -6,8 +6,8 @@ import { ChevronRight, Home, ArrowLeft, Search } from 'lucide-react';
 
 function App() {
   const [history, setHistory] = useState<FileItem[][]>([]);
-  const [selectedFile, setSelectedFile] = useState<{ path: string; name: string } | null>(null);
-  const [metadata, setMetadata] = useState<Record<string, { intro?: string; date?: string }>>({});
+  const [selectedFile, setSelectedFile] = useState<{ path: string; name: string; prev?: string; initialMode?: 'source' | 'image' } | null>(null);
+  const [metadata, setMetadata] = useState<Record<string, { intro?: string; date?: string; prev?: string }>>({});
   const [filter, setFilter] = useState<'all' | 'file' | 'directory'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -78,10 +78,28 @@ function App() {
             const text = await response.text();
             const introMatch = text.match(/Intro:\s*(.*)/i);
             const dateMatch = text.match(/Date:\s*(.*)/i);
+            const prevMatch = text.match(/Prev:\s*(.*)/i);
             
-            const newMeta: { intro?: string; date?: string } = {};
+            const newMeta: { intro?: string; date?: string; prev?: string } = {};
             if (introMatch && introMatch[1]) newMeta.intro = introMatch[1].trim();
             if (dateMatch && dateMatch[1]) newMeta.date = dateMatch[1].trim();
+            if (prevMatch && prevMatch[1]) {
+              const rawPath = prevMatch[1].trim();
+              if (rawPath.startsWith('.')) {
+                // 处理相对路径，例如 ../img/a.png
+                const baseUrl = item.path.substring(0, item.path.lastIndexOf('/'));
+                const parts = baseUrl.split('/').filter(Boolean);
+                const relParts = rawPath.split('/').filter(Boolean);
+                
+                for (const p of relParts) {
+                  if (p === '..') parts.pop();
+                  else if (p !== '.') parts.push(p);
+                }
+                newMeta.prev = '/' + parts.join('/');
+              } else {
+                newMeta.prev = rawPath.startsWith('/') ? rawPath : '/' + rawPath;
+              }
+            }
 
             if (Object.keys(newMeta).length > 0) {
               setMetadata(prev => ({ ...prev, [item.path]: newMeta }));
@@ -107,7 +125,11 @@ function App() {
       if (isImage) {
         window.open(item.path, '_blank');
       } else {
-        setSelectedFile({ path: item.path, name: item.name });
+        setSelectedFile({ 
+          path: item.path, 
+          name: item.name,
+          prev: metadata[item.path]?.prev
+        });
       }
     }
   };
@@ -149,6 +171,16 @@ function App() {
         downloadAll(item.children);
       }
     }
+  };
+
+  const handlePreviewImage = (e: React.MouseEvent, item: FileItem) => {
+    e.stopPropagation();
+    setSelectedFile({
+      path: item.path,
+      name: item.name,
+      prev: metadata[item.path]?.prev,
+      initialMode: 'image'
+    });
   };
 
   return (
@@ -235,8 +267,10 @@ function App() {
               name={item.name}
               type={item.type}
               intro={metadata[item.path]?.intro}
+              hasPrev={!!metadata[item.path]?.prev}
               onClick={() => handleItemClick(item)}
               onDownload={(e) => handleDownload(e, item)}
+              onPreviewImage={(e) => handlePreviewImage(e, item)}
             />
           ))}
           {currentItems.length === 0 && (
@@ -251,6 +285,8 @@ function App() {
         <CodeModal
           fileName={selectedFile.name}
           filePath={selectedFile.path}
+          prevImage={selectedFile.prev}
+          initialMode={selectedFile.initialMode}
           onClose={() => setSelectedFile(null)}
         />
       )}
