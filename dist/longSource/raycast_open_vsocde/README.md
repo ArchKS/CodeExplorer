@@ -1,4 +1,5 @@
 Intro: RayCast打开VsCode
+Tag: 系统工具
 
 # VS Code Project Manager for Raycast
 

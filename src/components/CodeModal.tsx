@@ -11,7 +11,7 @@ interface CodeModalProps {
   onClose: () => void;
 }
 
-const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevImage, initialMode, onClose }) => {
+export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevImage, initialMode, onClose }) => {
   const [code, setCode] = useState<string>('Loading...');
   const [language, setLanguage] = useState<string>('javascript');
   const [copied, setCopied] = useState(false);
@@ -137,7 +137,7 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevImage, in
           </div>
         </div>
         
-        <div className="flex-1 overflow-auto bg-[#1e1e1e] flex flex-col">
+        <div className="flex-1 overflow-hidden bg-[#1e1e1e] flex flex-col">
           {viewMode === 'image' ? (
             <div className="flex justify-center w-full min-h-full bg-gray-900 p-4">
               <img 
@@ -182,4 +182,3 @@ const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevImage, in
   );
 };
 
-export default CodeModal;

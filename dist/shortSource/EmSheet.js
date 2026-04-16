@@ -1,6 +1,6 @@
-// Intro: 财务报表同比显示油猴脚本
+// Intro: 东财证券报表同比显示
 // Prev: ../img/EmSheetPrev.png
-// Tag: 投资
+// Tag: 网页脚本
 // 油猴脚本
 
 // ==UserScript==

@@ -1,17 +1,18 @@
 import { useState, useMemo, useEffect } from 'react';
 import { shortSource, longSource, type FileItem } from './data';
-import CodeCard from './components/CodeCard';
-import CodeModal from './components/CodeModal';
-import { ChevronRight, Home, ArrowLeft, Search } from 'lucide-react';
+import { ChevronRight, Home, ArrowLeft, Search, Layers } from 'lucide-react';
+import { CodeCard } from './components/CodeCard';
+import { CodeModal } from './components/CodeModal';
 
-function App() {
+export function App() {
   const [history, setHistory] = useState<FileItem[][]>([]);
   const [selectedFile, setSelectedFile] = useState<{ path: string; name: string; prev?: string; initialMode?: 'source' | 'image' } | null>(null);
   const [metadata, setMetadata] = useState<Record<string, { intro?: string; date?: string; prev?: string; tag?: string }>>({});
   const [filter, setFilter] = useState<'all' | 'file' | 'directory'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const currentItems = useMemo(() => {
+  // 1. 数据过滤与排序
+  const filteredItems = useMemo(() => {
     let items: FileItem[] = [];
     if (history.length === 0) {
       items = [
@@ -29,7 +30,8 @@ function App() {
       const query = searchQuery.toLowerCase();
       items = items.filter(item => 
         item.name.toLowerCase().includes(query) || 
-        (metadata[item.path]?.intro && metadata[item.path].intro!.toLowerCase().includes(query))
+        (metadata[item.path]?.intro && metadata[item.path].intro!.toLowerCase().includes(query)) ||
+        (metadata[item.path]?.tag && metadata[item.path].tag!.toLowerCase().includes(query))
       );
     }
 
@@ -44,9 +46,31 @@ function App() {
     });
   }, [history, filter, searchQuery, metadata]);
 
+  // 2. 方案2核心：按 Tag 分组数据 (仅在根目录分组)
+  const groupedItems = useMemo(() => {
+    if (history.length > 0) return { "Content": filteredItems };
+
+    const groups: Record<string, FileItem[]> = {};
+    filteredItems.forEach(item => {
+      const tag = metadata[item.path]?.tag || 'Uncategorized';
+      if (!groups[tag]) groups[tag] = [];
+      groups[tag].push(item);
+    });
+
+    const sortedTags = Object.keys(groups).sort((a, b) => {
+      if (a === 'Uncategorized') return 1;
+      if (b === 'Uncategorized') return -1;
+      return a.localeCompare(b);
+    });
+
+    const result: Record<string, FileItem[]> = {};
+    sortedTags.forEach(tag => { result[tag] = groups[tag]; });
+    return result;
+  }, [filteredItems, history.length, metadata]);
+
   useEffect(() => {
     const fetchMetadata = async () => {
-      const itemsToFetch = currentItems.filter(item => !metadata[item.path]);
+      const itemsToFetch = filteredItems.filter(item => !metadata[item.path]);
       for (const item of itemsToFetch) {
         let fetchPath = '';
         if (item.type === 'file') fetchPath = item.path;
@@ -62,10 +86,12 @@ function App() {
             const introMatch = text.match(/Intro:\s*(.*)/i);
             const dateMatch = text.match(/Date:\s*(.*)/i);
             const prevMatch = text.match(/Prev:\s*(.*)/i);
+            const tagMatch = text.match(/Tag:\s*(.*)/i);
             
-            const newMeta: { intro?: string; date?: string; prev?: string } = {};
+            const newMeta: { intro?: string; date?: string; prev?: string; tag?: string } = {};
             if (introMatch) newMeta.intro = introMatch[1].trim();
             if (dateMatch) newMeta.date = dateMatch[1].trim();
+            if (tagMatch) newMeta.tag = tagMatch[1].trim();
             if (prevMatch) {
               const rawPath = prevMatch[1].trim();
               if (rawPath.startsWith('.')) {
@@ -89,7 +115,7 @@ function App() {
       }
     };
     fetchMetadata();
-  }, [currentItems]);
+  }, [filteredItems]);
 
   const handleItemClick = (item: FileItem) => {
     if (item.type === 'directory') setHistory([...history, item.children || []]);
@@ -122,47 +148,67 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-8">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8 text-center">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Code Explorer</h1>
-          <p className="text-lg text-gray-500 font-medium">Pure frontend code source viewer</p>
-        </header>
-
-        <nav className="flex items-center gap-2 mb-8 bg-white p-3 rounded-xl border border-gray-200 shadow-sm sticky top-4 z-30">
-          <button onClick={() => setHistory([])} className="p-2 hover:bg-gray-100 rounded-xl text-gray-600"><Home size={20} /></button>
-          <div className="relative mx-3 hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-            <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 w-64 lg:w-96 outline-none transition-all" />
-          </div>
-          {history.length > 0 && (
-            <>
-              <ChevronRight size={16} className="text-gray-400" />
-              <button onClick={() => setHistory(history.slice(0, -1))} className="flex items-center gap-1 px-4 py-2 hover:bg-gray-100 rounded-xl text-sm font-bold text-gray-700"><ArrowLeft size={16} />Back</button>
-            </>
-          )}
-          <div className="flex-1" />
-          {history.length === 0 && (
-            <div className="flex bg-gray-100 p-1 rounded-xl mr-3">
-              {['all', 'file', 'directory'].map(t => (
-                <button key={t} onClick={() => setFilter(t as any)} className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${filter === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{t.toUpperCase()}</button>
-              ))}
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <main className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <header className="mb-12 text-center">
+            <div className="flex items-center justify-center gap-3 mb-2">
+               <Layers className="text-blue-600" size={32} />
+               <h1 className="text-4xl font-black text-gray-900">Code Library</h1>
             </div>
-          )}
-          <div className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-tighter">{history.length === 0 ? 'Home' : `Depth ${history.length}`}</div>
-        </nav>
+            <p className="text-lg text-gray-500 font-medium">Automated source code gallery & interactive explorer</p>
+          </header>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {currentItems.map((item, index) => (
-            <CodeCard key={`${item.path}-${index}`} name={item.name} type={item.type} intro={metadata[item.path]?.intro} hasPrev={!!metadata[item.path]?.prev} onClick={() => handleItemClick(item)} onDownload={(e) => handleDownload(e, item)} onPreviewImage={(e) => handlePreviewImage(e, item)} />
-          ))}
-          {currentItems.length === 0 && <div className="col-span-full py-20 text-center text-gray-300 font-mono text-lg">No items found</div>}
+          <nav className="flex items-center gap-2 mb-10 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm sticky top-4 z-30">
+            <button onClick={() => setHistory([])} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors"><Home size={22} /></button>
+            <div className="relative mx-4 hidden sm:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+              <input type="text" placeholder="Search across all categories..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 w-80 lg:w-[450px] outline-none transition-all" />
+            </div>
+            {history.length > 0 && (
+              <>
+                <ChevronRight size={16} className="text-gray-400" />
+                <button onClick={() => setHistory(history.slice(0, -1))} className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-xl text-sm font-bold text-gray-700 transition-colors"><ArrowLeft size={18} />Back</button>
+              </>
+            )}
+            <div className="flex-1" />
+            {history.length === 0 && (
+              <div className="flex bg-gray-100 p-1.5 rounded-xl mr-4">
+                {['all', 'file', 'directory'].map(t => (
+                  <button key={t} onClick={() => setFilter(t as any)} className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${filter === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>{t.toUpperCase()}</button>
+                ))}
+              </div>
+            )}
+            <div className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-tighter">{history.length === 0 ? 'Home' : `Depth ${history.length}`}</div>
+          </nav>
+
+          <div className={`${history.length === 0 ? "space-x-6 flex overflow-y-auto pb-10" : ""}`}>
+            {Object.entries(groupedItems).map(([tag, items]) => (
+              <section key={tag} className={`${history.length == 0 ? "animate-in fade-in slide-in-from-bottom-4 duration-700 min-w-[300px]" : ""}`}>
+                {history.length === 0 && (
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="h-8 w-1.5 bg-blue-600 rounded-full"></div>
+                    <h2 className="text-2xl font-black text-gray-800 tracking-tight">{tag}</h2>
+                    <span className="px-2.5 py-0.5 bg-gray-200 text-gray-600 text-xs font-bold rounded-md uppercase">{items.length}</span>
+                  </div>
+                )}
+                <div className={history.length == 0 ? "max-w-[270px] space-y-8": "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"}>
+                  {items.map((item, index) => (
+                    <CodeCard key={`${item.path}-${index}`} name={item.name} type={item.type} intro={metadata[item.path]?.intro} hasPrev={!!metadata[item.path]?.prev} onClick={() => handleItemClick(item)} onDownload={(e) => handleDownload(e, item)} onPreviewImage={(e) => handlePreviewImage(e, item)} />
+                  ))}
+                </div>
+              </section>
+            ))}
+            {filteredItems.length === 0 && <div className="py-32 text-center">
+               <div className="text-gray-200 text-6xl mb-4">Empty</div>
+               <p className="text-gray-400 font-mono">No matching files found in this view</p>
+            </div>}
+          </div>
         </div>
-      </div>
+      </main>
 
       {selectedFile && <CodeModal fileName={selectedFile.name} filePath={selectedFile.path} prevImage={selectedFile.prev} initialMode={selectedFile.initialMode} onClose={() => setSelectedFile(null)} />}
     </div>
   );
 }
 
-export default App;
