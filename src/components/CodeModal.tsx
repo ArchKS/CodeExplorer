@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { X, Download, Copy, Check, Eye, Code, Image as ImageIcon } from 'lucide-react';
+import { X, Download, Copy, Check, Eye, Code, Image as ImageIcon, Maximize2, Minimize2 } from 'lucide-react';
 
 interface CodeModalProps {
   filePath: string;
@@ -19,6 +19,28 @@ export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevIm
   const [viewMode, setViewMode] = useState<'source' | 'preview' | 'image'>(
     initialMode || (isHtml ? 'preview' : 'source')
   );
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const handleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      if (iframeRef.current) {
+        iframeRef.current.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      }
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   useEffect(() => {
     const fetchCode = async () => {
@@ -113,6 +135,16 @@ export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevIm
             )}
           </div>
           <div className="flex items-center gap-4">
+            {viewMode === 'preview' && (
+              <button
+                onClick={handleFullscreen}
+                className="text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+                title="Fullscreen Preview"
+              >
+                {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                <span className="text-xs hidden sm:inline">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+              </button>
+            )}
             <button
               onClick={handleCopy}
               className="text-gray-400 hover:text-white transition-colors flex items-center gap-1"
@@ -149,9 +181,11 @@ export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevIm
           ) : viewMode === 'preview' ? (
             <div className="flex items-center justify-center w-full h-full bg-gray-100 p-8">
               <iframe
+                ref={iframeRef}
                 src={filePath}
                 className="w-[90%] h-[80vh] bg-white shadow-lg border border-gray-200"
                 title="HTML Preview"
+                allowFullScreen
               />
             </div>
           ) : (

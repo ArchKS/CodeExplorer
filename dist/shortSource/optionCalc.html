@@ -13,6 +13,7 @@ Star: 3
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>期权价值计算器</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
@@ -290,6 +291,43 @@ Star: 3
                     </div>
                 </div>
             </div>
+
+            <!-- 3D 曲面图 -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+                    <h3 class="text-lg font-semibold">期权价值 3D 曲面图</h3>
+                    <div class="flex flex-wrap items-center gap-3 bg-white p-2 px-3 rounded-xl border border-gray-100 shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-medium text-gray-500">价格范围:</span>
+                            <input type="number" id="surfaceMinPrice" class="w-20 px-2 py-1 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500" placeholder="最小">
+                            <span class="text-xs text-gray-400">至</span>
+                            <input type="number" id="surfaceMaxPrice" class="w-20 px-2 py-1 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500" placeholder="最大">
+                        </div>
+                        <div class="w-px h-4 bg-gray-200 mx-1"></div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-medium text-gray-500">价格步长:</span>
+                            <input type="number" id="surfacePriceStep" class="w-16 px-2 py-1 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500" step="1" placeholder="自动">
+                        </div>
+                        <div class="w-px h-4 bg-gray-200 mx-1"></div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-medium text-gray-500">时间步长:</span>
+                            <input type="number" id="surfaceTimeStep" class="w-16 px-2 py-1 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500" value="1" step="1">
+                            <span class="text-xs text-gray-400">天</span>
+                        </div>
+                        <div class="w-px h-4 bg-gray-200 mx-1"></div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-medium text-gray-500">高度:</span>
+                            <input type="number" id="surfaceHeight" class="w-16 px-2 py-1 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-indigo-500" value="1000" step="50">
+                            <span class="text-xs text-gray-400">px</span>
+                        </div>
+                        <button onclick="calc()" class="ml-2 px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-md hover:bg-indigo-100 transition-colors">
+                            <i class="fa fa-refresh mr-1"></i>更新图表
+                        </button>
+                    </div>
+                </div>
+                <div id="surfacePlot" class="w-[90vw] relative left-1/2 -translate-x-1/2 bg-white rounded-xl border border-gray-100 shadow-sm"></div>
+            </div>
+
             <!-- 表格 -->
             <div>
                 <h3 class="text-lg font-semibold mb-3">每日期权价值明细</h3>
@@ -1271,6 +1309,114 @@ Star: 3
             drawValueChart(labels, values);
             drawPctChart(labels, pctChanges);
             renderTable(labels, values, pctChanges);
+            draw3DSurface(S, K, days, r, s, type);
+        }
+
+        function draw3DSurface(S, K, daysTotal, r, s, type) {
+            const minInput = document.getElementById('surfaceMinPrice');
+            const maxInput = document.getElementById('surfaceMaxPrice');
+            const stepInput = document.getElementById('surfacePriceStep');
+            const timeStepInput = document.getElementById('surfaceTimeStep');
+            const heightInput = document.getElementById('surfaceHeight');
+            const plotDiv = document.getElementById('surfacePlot');
+
+            let minP = parseFloat(minInput.value);
+            let maxP = parseFloat(maxInput.value);
+            let stepP = parseFloat(stepInput.value);
+            let stepT = parseFloat(timeStepInput.value);
+            const heightP = parseFloat(heightInput.value) || 600;
+
+            // 设置容器高度
+            plotDiv.style.height = heightP + 'px';
+
+            // 自动初始化逻辑：如果没有值，则以 S 为中心的上下 60%
+            if (isNaN(minP)) { minP = S * 0.4; minInput.value = minP.toFixed(1); }
+            if (isNaN(maxP)) { maxP = S * 1.6; maxInput.value = maxP.toFixed(1); }
+
+            // 自动步长逻辑
+            if (isNaN(stepP) || stepP <= 0) { 
+                stepP = (maxP - minP) / 25; 
+                stepInput.placeholder = stepP.toFixed(2);
+            }
+            if (isNaN(stepT) || stepT <= 0) {
+                stepT = 1;
+                timeStepInput.value = 1;
+            }
+
+            const zData = [];
+            const xDays = []; 
+            const yPrices = []; 
+            
+            // 构建价格轴
+            for (let p = minP; p <= maxP + (stepP * 0.01); p += stepP) {
+                yPrices.push(p);
+                if (yPrices.length > 100) break; 
+            }
+
+            // 构建时间轴 - 精确按天步长
+            for (let d = 0; d <= daysTotal; d += stepT) {
+                xDays.push(d);
+                if (xDays.length > 100) break;
+            }
+            // 确保包含最后一天
+            if (xDays[xDays.length - 1] !== daysTotal) {
+                xDays.push(daysTotal);
+            }
+
+            // 获取当前理论价格作为基准
+            const currentRes = bs(S, K, daysTotal / 365, r / 100, s / 100, type);
+            const basePrice = currentRes.price;
+            const today = getTodayStart();
+
+            const dateLabels = xDays.map(d => formatDisplayDate(addDays(today, d)));
+            const hoverText = [];
+
+            for (let j = 0; j < yPrices.length; j++) {
+                const zRow = [];
+                const tRow = [];
+                const price = yPrices[j];
+                for (let i = 0; i < xDays.length; i++) {
+                    const daysLeft = Math.max(0, daysTotal - xDays[i]);
+                    const res = bs(price, K, daysLeft / 365, r / 100, s / 100, type);
+                    zRow.push(res.price);
+                    
+                    const roi = basePrice > 0 ? ((res.price - basePrice) / basePrice) * 100 : 0;
+                    const roiStr = (roi >= 0 ? '+' : '') + roi.toPrecision(2) + '%';
+                    
+                    tRow.push(
+                        `日期: ${dateLabels[i]} (第${xDays[i]}天)<br>` +
+                        `标的价格: ${price.toFixed(2)}<br>` +
+                        `期权价值: ${res.price.toFixed(2)}<br>` +
+                        `相对盈亏: ${roiStr}`
+                    );
+                }
+                zData.push(zRow);
+                hoverText.push(tRow);
+            }
+
+            const data = [{
+                z: zData,
+                x: xDays,
+                y: yPrices,
+                text: hoverText,
+                hoverinfo: 'text',
+                type: 'surface',
+                colorscale: 'Viridis',
+                colorbar: { title: '期权价值', thickness: 20 }
+            }];
+
+            const layout = {
+                title: '期权价值 3D 盈亏模拟',
+                autosize: true,
+                margin: { l: 0, r: 0, b: 0, t: 50 },
+                scene: {
+                    xaxis: { title: '已过天数 (天)' },
+                    yaxis: { title: '标的价格' },
+                    zaxis: { title: '理论价值' }
+                }
+            };
+
+            Plotly.newPlot('surfacePlot', data, layout, { responsive: true });
         }
 
         window.addEventListener('load', () => {
