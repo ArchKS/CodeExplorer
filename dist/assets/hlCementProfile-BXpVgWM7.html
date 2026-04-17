@@ -1,0 +1,548 @@
+<!-- 
+ Intro: 海螺水泥利润模型
+Tag: 投资工具
+  -->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>海螺水泥经营建模说明</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --paper: #fffdf8;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #d6d0c4;
+      --accent: #9a3412;
+      --accent-soft: #fff1e8;
+      --table-head: #efe7da;
+      --code: #f3efe6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Noto Serif SC", "Source Han Serif SC", "PingFang SC", "Microsoft YaHei", serif;
+      background:
+        radial-gradient(circle at top right, #fbe7d8 0, transparent 32%),
+        linear-gradient(180deg, #f6f1e8 0%, #efe7da 100%);
+      color: var(--ink);
+      line-height: 1.8;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 40px auto;
+      padding: 40px 48px;
+      background: var(--paper);
+      border: 1px solid rgba(154, 52, 18, 0.12);
+      border-radius: 20px;
+      box-shadow: 0 18px 45px rgba(64, 46, 24, 0.12);
+    }
+
+    h1, h2, h3 {
+      line-height: 1.35;
+      margin-top: 1.6em;
+      margin-bottom: 0.6em;
+      color: #111827;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 2rem;
+      letter-spacing: 0.02em;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 2px solid var(--line);
+    }
+
+    h3 {
+      font-size: 1.08rem;
+      color: var(--accent);
+    }
+
+    p {
+      margin: 0.85em 0;
+    }
+
+    ul {
+      margin: 0.5em 0 1em 1.2em;
+      padding: 0;
+    }
+
+    li {
+      margin: 0.35em 0;
+    }
+
+    .lead {
+      font-size: 1.05rem;
+      color: var(--muted);
+    }
+
+    .callout {
+      background: var(--accent-soft);
+      border-left: 4px solid var(--accent);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 16px 0 22px;
+    }
+
+    .formula {
+      background: #fcfaf6;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0 26px;
+      font-size: 0.96rem;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--table-head);
+      font-weight: 700;
+    }
+
+    code {
+      font-family: "Consolas", "SFMono-Regular", monospace;
+      background: var(--code);
+      padding: 0.1em 0.35em;
+      border-radius: 6px;
+      font-size: 0.93em;
+    }
+
+    .sources a {
+      color: #0f4c81;
+      text-decoration: none;
+    }
+
+    .sources a:hover {
+      text-decoration: underline;
+    }
+
+    .footer-note {
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        margin: 16px;
+        padding: 24px 18px;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['\\[', '\\]']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <main class="page">
+    <h1>海螺水泥经营建模说明</h1>
+    <p class="lead">目标是建立一个可解释、可拟合、可迭代升级的模型，用来回答“当水泥均价为 X 时，海螺水泥利润大致为 Y”。</p>
+
+    <div class="callout">
+      <strong>先回答定义问题：</strong>熟料和水泥不是一种东西。熟料是水泥生产过程中的中间品，水泥是熟料加石膏、混合材粉磨后的成品。熟料既可以外售，也可以内部转化为水泥销售。
+    </div>
+
+    <h2>一、为什么建议先做合并口径模型</h2>
+    <p>海螺公开财报通常能直接披露以下数据：</p>
+    <ul>
+      <li>水泥+熟料合并销量</li>
+      <li>水泥+熟料合并收入、成本、毛利率</li>
+      <li>分产品收入、成本、毛利率，包括水泥、熟料、骨料、商混</li>
+    </ul>
+    <p>但财报通常<strong>不会完整披露每个产品的单独销量</strong>。因此：</p>
+    <ul>
+      <li>“水泥单吨售价/单吨成本/单吨毛利”不能完全直接从年报抄出</li>
+      <li>“熟料单吨售价/单吨成本/单吨毛利”也需要反推</li>
+      <li>第一版模型最稳妥的口径是“自产品水泥+熟料合并口径”</li>
+    </ul>
+
+    <h2>二、总模型结构</h2>
+    <p>若目标是经营利润建模，建议从利润总额或主营经营利润出发，不要一开始就直接拟合归母净利润。</p>
+
+    <div class="formula">
+      \[
+      Y_t = GP^{cc}_t + GP^{agg}_t + GP^{conc}_t - OPEX4_t - TAX_t + OTHER_t
+      \]
+    </div>
+
+    <p>其中：</p>
+    <ul>
+      <li><code>GP^{cc}_t</code>：水泥+熟料主业毛利</li>
+      <li><code>GP^{agg}_t</code>：骨料毛利</li>
+      <li><code>GP^{conc}_t</code>：商混毛利</li>
+      <li><code>OPEX4_t</code>：四费，即销售、管理、研发、财务费用</li>
+      <li><code>TAX_t</code>：税金及附加</li>
+      <li><code>OTHER_t</code>：投资收益、公允价值变动、其他收益、营业外收支等</li>
+    </ul>
+
+    <h2>三、主业毛利模型</h2>
+    <div class="formula">
+      \[
+      GP^{cc}_t = V^{cc}_t \times (P^{cc}_t - C^{cc}_t)
+      \]
+    </div>
+
+    <p>其中：</p>
+    <ul>
+      <li><code>V^{cc}_t</code>：海螺自产品水泥+熟料销量</li>
+      <li><code>P^{cc}_t</code>：海螺水泥+熟料加权吨售价</li>
+      <li><code>C^{cc}_t</code>：海螺水泥+熟料加权吨成本</li>
+    </ul>
+
+    <h3>成本端进一步拆分</h3>
+    <p>根据海螺历史财报，燃料及动力成本是水泥熟料吨成本中最大的一项，长期占比约 55% 到 63%。因此你提出的“煤炭为主要变量、其余成本视作常量”是合理的。</p>
+
+    <div class="formula">
+      \[
+      C^{cc}_t = C^{fixed} + \beta \times Coal_t
+      \]
+    </div>
+
+    <p>其中：</p>
+    <ul>
+      <li><code>C^{fixed}</code>：非煤部分的近似常量成本</li>
+      <li><code>Coal_t</code>：煤价代理变量，例如秦皇岛 5500 大卡、CCI 指数或公司采购煤均价</li>
+      <li><code>\beta</code>：煤价向吨成本的传导系数</li>
+    </ul>
+
+    <h2>四、最适合第一版落地的拟合式</h2>
+    <p>如果目标是快速建立“水泥均价 X 对利润 Y 的弹性关系”，第一版建议直接拟合海螺水泥+熟料吨毛利：</p>
+
+    <div class="formula">
+      \[
+      g_t = \alpha + \beta \times X_t - \delta \times Coal_t
+      \]
+    </div>
+
+    <p>其中：</p>
+    <ul>
+      <li><code>g_t</code>：海螺自产品水泥+熟料吨毛利</li>
+      <li><code>X_t</code>：行业水泥均价，例如全国或华东 P.O42.5 散装水泥均价</li>
+      <li><code>Coal_t</code>：煤价</li>
+    </ul>
+
+    <p>再进一步：</p>
+
+    <div class="formula">
+      \[
+      GP^{cc}_t = V^{cc}_t \times g_t
+      \]
+    </div>
+
+    <div class="formula">
+      \[
+      Profit_t = GP^{cc}_t + GP^{agg}_t + GP^{conc}_t - OPEX4_t - TaxSurcharge_t + Other_t
+      \]
+    </div>
+
+    <p>如果最终想映射到归母净利润，则可以再增加：</p>
+
+    <div class="formula">
+      \[
+      NP_t = ProfitBeforeTax_t \times (1 - ETR_t) - Minority_t
+      \]
+    </div>
+
+    <h2>五、海螺历史数据验证</h2>
+    <p>以下是核对海螺官方年报后整理的“自产品水泥+熟料合并口径”核心数据。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>年份</th>
+          <th>自产品水泥+熟料销量</th>
+          <th>自产品收入</th>
+          <th>自产品成本</th>
+          <th>加权吨售价</th>
+          <th>加权吨成本</th>
+          <th>加权吨毛利</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>2021</td>
+          <td>3.04 亿吨</td>
+          <td>1116.53 亿元</td>
+          <td>626.51 亿元</td>
+          <td>367.3 元/吨</td>
+          <td>206.1 元/吨</td>
+          <td>161.2 元/吨</td>
+        </tr>
+        <tr>
+          <td>2022</td>
+          <td>2.83 亿吨</td>
+          <td>948.74 亿元</td>
+          <td>676.41 亿元</td>
+          <td>335.2 元/吨</td>
+          <td>239.0 元/吨</td>
+          <td>96.2 元/吨</td>
+        </tr>
+        <tr>
+          <td>2023</td>
+          <td>2.85 亿吨</td>
+          <td>840.51 亿元</td>
+          <td>624.36 亿元</td>
+          <td>294.9 元/吨</td>
+          <td>219.1 元/吨</td>
+          <td>75.8 元/吨</td>
+        </tr>
+        <tr>
+          <td>2024</td>
+          <td>2.68 亿吨</td>
+          <td>732.14 亿元</td>
+          <td>550.48 亿元</td>
+          <td>273.2 元/吨</td>
+          <td>205.4 元/吨</td>
+          <td>67.8 元/吨</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>这张表说明两件事：</p>
+    <ul>
+      <li>海螺吨毛利对价格很敏感，2021 到 2024 年随行业价格明显下行</li>
+      <li>吨成本并非单边上升，2024 年明显下降，和煤价回落高度一致</li>
+    </ul>
+
+    <h2>六、成本结构验证煤炭假设</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>年份</th>
+          <th>原材料</th>
+          <th>燃料及动力</th>
+          <th>折旧</th>
+          <th>人工</th>
+          <th>其他</th>
+          <th>合计吨成本</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>2021</td>
+          <td>46.10</td>
+          <td>112.74</td>
+          <td>12.66</td>
+          <td>12.14</td>
+          <td>19.70</td>
+          <td>203.34</td>
+        </tr>
+        <tr>
+          <td>2022</td>
+          <td>40.52</td>
+          <td>144.54</td>
+          <td>14.00</td>
+          <td>13.08</td>
+          <td>18.26</td>
+          <td>230.40</td>
+        </tr>
+        <tr>
+          <td>2023</td>
+          <td>39.18</td>
+          <td>119.71</td>
+          <td>14.96</td>
+          <td>12.56</td>
+          <td>18.56</td>
+          <td>204.97</td>
+        </tr>
+        <tr>
+          <td>2024</td>
+          <td>36.49</td>
+          <td>103.76</td>
+          <td>16.17</td>
+          <td>12.62</td>
+          <td>18.21</td>
+          <td>187.25</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>可以据此粗略理解为：</p>
+    <ul>
+      <li>燃料及动力是最大变量项</li>
+      <li>非燃料部分大致稳定在 83 到 91 元/吨区间</li>
+      <li>第一版模型完全可以采用“非煤成本常量化”的近似</li>
+    </ul>
+
+    <h2>七、四费应单列</h2>
+    <p>你提出“四费+税单独列出”是正确的，因为这部分不宜混入吨制造成本。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>年份</th>
+          <th>四费合计</th>
+          <th>粗略对应吨费用</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>2021</td>
+          <td>84.94 亿元</td>
+          <td>约 27.9 元/吨</td>
+        </tr>
+        <tr>
+          <td>2022</td>
+          <td>92.49 亿元</td>
+          <td>约 32.7 元/吨</td>
+        </tr>
+        <tr>
+          <td>2023</td>
+          <td>98.16 亿元</td>
+          <td>约 34.4 元/吨</td>
+        </tr>
+        <tr>
+          <td>2024</td>
+          <td>94.48 亿元</td>
+          <td>约 35.3 元/吨</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>所以可以考虑：</p>
+    <div class="formula">
+      \[
+      OPEX4_t = a + b \times V_t
+      \]
+    </div>
+
+    <p>或者更实务地写成：</p>
+    <div class="formula">
+      \[
+      OPEX4_t = opex\_per\_ton \times V^{cc}_t + opex\_fixed
+      \]
+    </div>
+
+    <h2>八、骨料模块如何处理</h2>
+    <p>骨料应当单列，但公开财报通常只披露收入、成本、毛利率，不稳定披露销量，因此第一版建议先作为独立毛利模块：</p>
+
+    <div class="formula">
+      \[
+      GP^{agg}_t = Revenue^{agg}_t \times Margin^{agg}_t
+      \]
+    </div>
+
+    <p>待后续拿到骨料销量后，再升级为单吨模型：</p>
+    <ul>
+      <li>骨料吨售价</li>
+      <li>骨料吨成本</li>
+      <li>骨料吨毛利</li>
+    </ul>
+
+    <h2>九、如果后续要拆“水泥单吨”和“熟料单吨”</h2>
+    <p>可以在第二版模型中引入反推结构：</p>
+
+    <div class="formula">
+      \[
+      V^{cc}_t = V^{cement}_t + V^{clinker}_t
+      \]
+    </div>
+
+    <div class="formula">
+      \[
+      Revenue^{cc}_t = P^{cement}_t \times V^{cement}_t + P^{clinker}_t \times V^{clinker}_t
+      \]
+    </div>
+
+    <div class="formula">
+      \[
+      Cost^{cc}_t = C^{cement}_t \times V^{cement}_t + C^{clinker}_t \times V^{clinker}_t
+      \]
+    </div>
+
+    <p>再结合工艺关系：</p>
+
+    <div class="formula">
+      \[
+      C^{clinker}_t = c_0 + c_1 \times Coal_t
+      \]
+    </div>
+
+    <div class="formula">
+      \[
+      C^{cement}_t = c_2 + \lambda \times C^{clinker}_t
+      \]
+    </div>
+
+    <p>其中 <code>\lambda</code> 可理解为熟料系数，普通硅酸盐水泥通常大致在 0.72 到 0.78 区间，具体受 42.5/32.5 比例和混合材掺量影响。</p>
+
+    <h2>十、数据整理建议</h2>
+    <p>建议按以下顺序取数并建表：</p>
+    <ul>
+      <li>海螺财报：自产品水泥+熟料销量、收入、成本；骨料收入/成本/毛利率；商混收入/成本/毛利率；四费；税金及附加；利润总额；归母净利</li>
+      <li>行业数据：全国或区域水泥均价、熟料均价、动力煤价格</li>
+      <li>派生字段：吨售价、吨成本、吨毛利、燃料动力吨成本、非燃料吨成本、吨费用</li>
+    </ul>
+
+    <h2>十一、结论</h2>
+    <ul>
+      <li>熟料和水泥不是一种东西，熟料是中间品，水泥是终端成品</li>
+      <li>第一版模型建议先用“水泥+熟料合并口径”拟合，不要一上来硬拆水泥吨价和熟料吨价</li>
+      <li>成本端完全可以先采用“煤炭驱动 + 其他成本常量化”的思路</li>
+      <li>四费和税应单列，不混进吨制造成本</li>
+      <li>骨料应独立建模，但第一版先用收入乘毛利率的方式处理更稳妥</li>
+    </ul>
+
+    <h2>参考来源</h2>
+    <div class="sources">
+      <ul>
+        <li><a href="https://www.hkexnews.hk/listedco/listconews/sehk/2022/0413/2022041300275.pdf">海螺水泥 2021 年年报</a></li>
+        <li><a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2023/0327/2023032701906.pdf">海螺水泥 2022 年业绩公告</a></li>
+        <li><a href="https://www.hkexnews.hk/listedco/listconews/sehk/2024/0417/2024041700628.pdf">海螺水泥 2023 年年报</a></li>
+        <li><a href="https://www.hkexnews.hk/listedco/listconews/sehk/2025/0415/2025041500712.pdf">海螺水泥 2024 年年报</a></li>
+      </ul>
+    </div>
+
+    <p>Profit = 水泥熟料毛利+骨料毛利+商混毛利-四费-税金+投资收益/公允价值变动/其他收益等</p>
+    <p>运营利润 = 水泥熟料毛利+骨料毛利+商混毛利-四费-税金</p>
+    <p>令：水泥熟料=a</p>
+    <p>=a销量*(a单吨售价-a单吨成本)+骨料商混毛利</p>
+    <p>=a销量*(a单吨售价-单吨煤炭成本-其余常量成本) +...</p>
+    <p>=a销量*(a单吨售价-煤炭价格*单吨煤炭消耗*转化系数-其余常量成本) +骨料商混毛利</p>
+  </main>
+</body>
+</html>
