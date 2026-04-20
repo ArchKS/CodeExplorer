@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { shortSource, longSource, type FileItem } from './data';
+import { TAG_SORT } from './config';
 import { ChevronRight, Home, ArrowLeft, Search, Layers } from 'lucide-react';
 import { CodeCard } from './components/CodeCard';
 import { CodeModal } from './components/CodeModal';
@@ -68,6 +69,9 @@ export function App() {
     });
 
     const sortedTags = Object.keys(groups).sort((a, b) => {
+      const sortA = TAG_SORT[a] || 999;
+      const sortB = TAG_SORT[b] || 999;
+      if (sortA !== sortB) return sortA - sortB;
       if (a === 'Uncategorized') return 1;
       if (b === 'Uncategorized') return -1;
       return a.localeCompare(b);

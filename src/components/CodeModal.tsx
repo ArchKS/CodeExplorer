@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { X, Download, Copy, Check, Eye, Code, Image as ImageIcon, Maximize2, Minimize2 } from 'lucide-react';
@@ -16,11 +18,14 @@ export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevIm
   const [language, setLanguage] = useState<string>('javascript');
   const [copied, setCopied] = useState(false);
   const isHtml = fileName.toLowerCase().endsWith('.html');
+  const isMarkdown = fileName.toLowerCase().endsWith('.md');
+  const isPreviewable = isHtml || isMarkdown;
   const [viewMode, setViewMode] = useState<'source' | 'preview' | 'image'>(
-    initialMode || (isHtml ? 'preview' : 'source')
+    initialMode || (isPreviewable ? 'preview' : 'source')
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const iframeRef = React.useRef<HTMLIFrameElement>(null);
+  const markdownRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -32,8 +37,9 @@ export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevIm
 
   const handleFullscreen = () => {
     if (!document.fullscreenElement) {
-      if (iframeRef.current) {
-        iframeRef.current.requestFullscreen().catch(err => {
+      const element = isHtml ? iframeRef.current : markdownRef.current;
+      if (element) {
+        element.requestFullscreen().catch(err => {
           console.error(`Error attempting to enable full-screen mode: ${err.message}`);
         });
       }
@@ -97,7 +103,7 @@ export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevIm
         <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800">
           <div className="flex items-center gap-4">
             <h2 className="text-white font-mono text-sm truncate max-w-[200px]">{fileName}</h2>
-            {isHtml && (
+            {isPreviewable && (
               <div className="flex bg-gray-700 rounded-md p-1">
                 <button
                   onClick={() => setViewMode('source')}
@@ -121,7 +127,7 @@ export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevIm
             )}
             {prevImage && (
               <button
-                onClick={() => setViewMode(viewMode === 'image' ? (isHtml ? 'preview' : 'source') : 'image')}
+                onClick={() => setViewMode(viewMode === 'image' ? (isPreviewable ? 'preview' : 'source') : 'image')}
                 className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-bold transition-all border ${
                   viewMode === 'image' 
                     ? 'bg-purple-600 text-white border-purple-400 shadow-inner' 
@@ -179,14 +185,46 @@ export const CodeModal: React.FC<CodeModalProps> = ({ filePath, fileName, prevIm
               />
             </div>
           ) : viewMode === 'preview' ? (
-            <div className="flex items-center justify-center w-full h-full bg-gray-100 p-8">
-              <iframe
-                ref={iframeRef}
-                src={filePath}
-                className="w-[90%] h-[80vh] bg-white shadow-lg border border-gray-200"
-                title="HTML Preview"
-                allowFullScreen
-              />
+            <div className="flex items-center justify-center w-full h-full bg-gray-100 p-8 overflow-auto">
+              {isHtml ? (
+                <iframe
+                  ref={iframeRef}
+                  src={filePath}
+                  className="w-[90%] h-[80vh] bg-white shadow-lg border border-gray-200"
+                  title="HTML Preview"
+                  allowFullScreen
+                />
+              ) : (
+                <div 
+                  ref={markdownRef}
+                  className="w-[90%] h-[80vh] bg-white shadow-lg border border-gray-200 p-8 prose prose-slate max-w-none overflow-auto"
+                >
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ node, inline, className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={vscDarkPlus}
+                            language={match[1]}
+                            PreTag="div"
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                    }}
+                  >
+                    {code}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
           ) : (
             <SyntaxHighlighter
