@@ -1,0 +1,273 @@
+<!-- 
+Intro: 中国人口年龄结构
+Tag: 投资工具
+  -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>中国分岁人口结构投影（2025年）</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --ink: #1e293b;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --primary: #3b82f6;
+      --secondary: #6366f1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .header {
+      padding: 32px 32px 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    #chart {
+      width: 100%;
+      height: 600px;
+      padding: 20px;
+    }
+
+    .footer {
+      padding: 0 32px 32px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="header">
+        <h1>2025年中国分岁人口结构投影</h1>
+        <p class="subtitle">
+          基于2020年第七次全国人口普查数据平推，并结合2021-2025年出生人口估算（不考虑死亡率修正）。
+        </p>
+      </div>
+      <div id="chart"></div>
+      <div id="chart5" style="width: 100%; height: 500px; padding: 20px;"></div>
+      <div id="chart10" style="width: 100%; height: 500px; padding: 20px;"></div>
+      <div class="footer">
+        数据说明：<br>
+        1. 2025年0-4岁数据采用近年出生人口：2021年1062万，2022年956万，2023-2025年均值约902万。<br>
+        2. 5-90岁数据由2020年普查单岁人口数据（0-85岁）平移5年所得。<br>
+        3. 这是一个简易的人口结构投影，用于直观展示各年龄段人口分布。
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script>
+    const ageData = [902,902,902,956,1062,1202,1464.9,1523,1723.2,1785.7,1654.8,1729.1,1746.5,1634.6,1630.9,1413.4,1385.3,1335.6,1393.7,1424,1463.3,1506.6,1573.9,1607,1609.4,1735.6,1845.7,1838.6,1798.8,1686,1708.2,1792.8,1910.1,2200.7,2577.8,2477.5,2404.9,2419,2191,2147.1,2012.7,1904.3,1916.3,1913.6,1845.8,1724.8,1709.8,1827.4,1982.5,2108.9,2267.5,2364.5,2452.9,2515.6,2605,2439.8,2276,2125,2095.3,1957.5,1751.2,1675.2,1900.5,2139.7,2351.4,1989.1,1819.8,1782.9,1874.1,1943.4,1858,1919.1,1968.1,1825.8,1512.4,1419.7,1301.9,1148,1018.6,878,752.6,624,579.8,524.3,472.9,412.3,345.5,289.8,244.6,204,169.5];
+
+    const chart = echarts.init(document.getElementById('chart'));
+    
+    const ages = Array.from({ length: 91 }, (_, i) => i);
+    const totalPop = ageData.reduce((a, b) => a + b, 0);
+
+    // 计算5年一组的数据
+    const data5 = [];
+    const labels5 = [];
+    for (let i = 0; i <= 90; i += 5) {
+      let sum = 0;
+      let end = Math.min(i + 4, 90);
+      for (let j = i; j <= end; j++) {
+        sum += ageData[j];
+      }
+      data5.push(parseFloat(sum.toFixed(1)));
+      labels5.push(`${i}-${end}岁`);
+    }
+
+    // 计算10年一组的数据
+    const data10 = [];
+    const labels10 = [];
+    for (let i = 0; i <= 90; i += 10) {
+      let sum = 0;
+      let end = Math.min(i + 9, 90);
+      for (let j = i; j <= end; j++) {
+        sum += ageData[j];
+      }
+      data10.push(parseFloat(sum.toFixed(1)));
+      labels10.push(`${i}-${end}岁`);
+    }
+
+    // 第一个图表：单岁人口
+    const option = {
+      title: { text: '2025年中国人口分布（单岁）', left: 'center', top: 10 },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: (params) => {
+          const age = params[0].name;
+          const val = params[0].value;
+          const birthYear = 2025 - age;
+          return `<strong>年龄: ${age}岁</strong><br/>
+                  出生年份: ${birthYear}年左右<br/>
+                  预估人口: <span style="color:#3b82f6;font-weight:bold">${val}</span> 万人`;
+        }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '15%',
+        top: '15%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        name: '年龄',
+        data: ages,
+        axisTick: { alignWithLabel: true }
+      },
+      yAxis: {
+        type: 'value',
+        name: '人口（万人）',
+        splitLine: {
+          lineStyle: { type: 'dashed' }
+        }
+      },
+      series: [
+        {
+          name: '人口',
+          type: 'bar',
+          data: ageData,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#3b82f6' },
+              { offset: 1, color: '#6366f1' }
+            ])
+          },
+          emphasis: {
+            itemStyle: {
+              color: '#2563eb'
+            }
+          }
+        }
+      ],
+      dataZoom: [
+        { type: 'inside' },
+        { type: 'slider', bottom: 10 }
+      ]
+    };
+
+    chart.setOption(option);
+
+    // 第二个图表：5年一组
+    const chart5 = echarts.init(document.getElementById('chart5'));
+    const option5 = {
+      title: { text: '2025年中国人口分布（5年一组）', left: 'center' },
+      tooltip: { 
+        trigger: 'axis', 
+        axisPointer: { type: 'shadow' },
+        formatter: (params) => {
+          const val = params[0].value;
+          const percent = ((val / totalPop) * 100).toFixed(2);
+          return `<strong>年龄组: ${params[0].name}</strong><br/>
+                  人口数量: ${val} 万人<br/>
+                  占总人口: ${percent}%`;
+        }
+      },
+      grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+      xAxis: { type: 'category', data: labels5 },
+      yAxis: { type: 'value', name: '人口（万人）' },
+      series: [{
+        name: '人口',
+        type: 'bar',
+        data: data5,
+        itemStyle: { color: '#10b981' },
+        label: { 
+          show: true, 
+          position: 'top', 
+          fontSize: 10,
+          formatter: (params) => {
+            const percent = ((params.value / totalPop) * 100).toFixed(1);
+            return `${params.value}\n(${percent}%)`;
+          }
+        }
+      }]
+    };
+    chart5.setOption(option5);
+
+    // 第三个图表：10年一组
+    const chart10 = echarts.init(document.getElementById('chart10'));
+    const option10 = {
+      title: { text: '2025年中国人口分布（10年一组）', left: 'center' },
+      tooltip: { 
+        trigger: 'axis', 
+        axisPointer: { type: 'shadow' },
+        formatter: (params) => {
+          const val = params[0].value;
+          const percent = ((val / totalPop) * 100).toFixed(2);
+          return `<strong>年龄组: ${params[0].name}</strong><br/>
+                  人口数量: ${val} 万人<br/>
+                  占总人口: ${percent}%`;
+        }
+      },
+      grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+      xAxis: { type: 'category', data: labels10 },
+      yAxis: { type: 'value', name: '人口（万人）' },
+      series: [{
+        name: '人口',
+        type: 'bar',
+        data: data10,
+        itemStyle: { color: '#f59e0b' },
+        label: { 
+          show: true, 
+          position: 'top',
+          formatter: (params) => {
+            const percent = ((params.value / totalPop) * 100).toFixed(1);
+            return `${params.value}\n(${percent}%)`;
+          }
+        }
+      }]
+    };
+    chart10.setOption(option10);
+
+    window.addEventListener('resize', () => {
+      chart.resize();
+      chart5.resize();
+      chart10.resize();
+    });
+  </script>
+</body>
+</html>
