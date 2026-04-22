@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>海螺水泥利润测算器</title>
+  <style>
+    :root{
+      --bg:#f7f4ee;
+      --paper:#fffdf8;
+      --ink:#1f2937;
+      --muted:#6b7280;
+      --line:#d9d2c6;
+      --accent:#9a3412;
+      --accent-soft:#fff3ea;
+      --good:#065f46;
+      --bad:#991b1b;
+      --table-head:#efe7da;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at top right,#fde7d6 0,transparent 30%),
+        linear-gradient(180deg,#f6f1e8 0%,#efe7da 100%);
+      line-height:1.65;
+    }
+    .wrap{
+      max-width:1200px;
+      margin:28px auto;
+      padding:0 16px 40px;
+    }
+    .card{
+      background:var(--paper);
+      border:1px solid rgba(154,52,18,.12);
+      border-radius:20px;
+      box-shadow:0 16px 40px rgba(64,46,24,.10);
+      padding:24px;
+      margin-bottom:18px;
+    }
+    h1,h2,h3{margin:0 0 12px}
+    h1{font-size:30px}
+    h2{font-size:22px; padding-bottom:8px; border-bottom:2px solid var(--line)}
+    h3{font-size:18px; color:var(--accent)}
+    p{margin:8px 0}
+    .muted{color:var(--muted)}
+    .tip{
+      background:var(--accent-soft);
+      border-left:4px solid var(--accent);
+      padding:12px 14px;
+      border-radius:12px;
+      margin:14px 0 0;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:14px;
+    }
+    .field{
+      grid-column:span 3;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .field.wide{grid-column:span 6}
+    .field.full{grid-column:1/-1}
+    label{
+      font-weight:700;
+      font-size:14px;
+    }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      font-size:15px;
+      color:var(--ink);
+    }
+    input:focus{
+      outline:none;
+      border-color:#c46f45;
+      box-shadow:0 0 0 3px rgba(196,111,69,.12);
+    }
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    button{
+      border:none;
+      border-radius:12px;
+      padding:12px 16px;
+      font-size:15px;
+      cursor:pointer;
+      background:#1f2937;
+      color:#fff;
+    }
+    button.secondary{
+      background:#ece7de;
+      color:#111827;
+    }
+    .metric-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:14px;
+      margin-top:12px;
+    }
+    .metric{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      background:#fff;
+    }
+    .metric .k{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .metric .v{
+      font-size:28px;
+      font-weight:800;
+      letter-spacing:.01em;
+    }
+    .metric.good .v{color:var(--good)}
+    .metric.bad .v{color:var(--bad)}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+      margin-top:10px;
+    }
+    th,td{
+      border:1px solid var(--line);
+      padding:10px 10px;
+      text-align:right;
+      white-space:nowrap;
+    }
+    th:first-child, td:first-child{text-align:left}
+    th{background:var(--table-head)}
+    .small{font-size:13px}
+    .two-col{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:18px;
+    }
+    .pill{
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      background:#f2eee7;
+      font-size:12px;
+      color:#6b7280;
+      margin-right:6px;
+      margin-bottom:6px;
+    }
+    .footer{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:10px;
+    }
+    @media (max-width: 980px){
+      .field,.field.wide{grid-column:span 6}
+      .metric-grid{grid-template-columns:repeat(2,1fr)}
+      .two-col{grid-template-columns:1fr}
+    }
+    @media (max-width: 640px){
+      .field,.field.wide{grid-column:1/-1}
+      .metric-grid{grid-template-columns:1fr}
+      table{display:block; overflow-x:auto}
+      h1{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card">
+      <h1>海螺水泥利润测算器</h1>
+      <p class="muted">按你前面的模型做成了一个可交互版本。为了能真正算出利润，我把“售价”也列成了输入项；只有四费、税金、煤炭成本、销量，不足以推算收入。</p>
+      <div class="tip small">
+        口径说明：这里默认按“水泥 + 熟料主业利润 + 骨料/商混/其他补充项 - 四费 - 税金及附加”来测算。单位统一写在字段后面。
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>输入区</h2>
+      <div class="grid">
+        <div class="field">
+          <label for="cementVol">水泥销量（亿吨）</label>
+          <input id="cementVol" type="number" step="0.01" value="23300" />
+        </div>
+        <div class="field">
+          <label for="clinkerVol">熟料销量（亿吨）</label>
+          <input id="clinkerVol" type="number" step="0.01" value="3500" />
+        </div>
+        <div class="field">
+          <label for="cementPrice">水泥吨售价（元/吨）</label>
+          <input id="cementPrice" type="number" step="0.01" value="285" />
+        </div>
+        <div class="field">
+          <label for="clinkerPrice">熟料吨售价（元/吨）</label>
+          <input id="clinkerPrice" type="number" step="0.01" value="300" />
+        </div>
+
+        <div class="field">
+          <label for="coalCost">煤炭成本（元/吨）</label>
+          <input id="coalCost" type="number" step="0.01" value="104" />
+        </div>
+        <div class="field">
+          <label for="nonCoalCost">非煤制造成本（元/吨）</label>
+          <input id="nonCoalCost" type="number" step="0.01" value="84" />
+        </div>
+        <div class="field">
+          <label for="clinkerCoef">水泥熟料系数</label>
+          <input id="clinkerCoef" type="number" step="0.001" value="0.75" />
+        </div>
+        <div class="field">
+          <label for="clinkerPremium">熟料额外制造成本（元/吨）</label>
+          <input id="clinkerPremium" type="number" step="0.01" value="10" />
+        </div>
+
+        <div class="field">
+          <label for="opex">四费合计（亿元）</label>
+          <input id="opex" type="number" step="0.01" value="94.48" />
+        </div>
+        <div class="field">
+          <label for="tax">税金及附加（亿元）</label>
+          <input id="tax" type="number" step="0.01" value="9.50" />
+        </div>
+        <div class="field">
+          <label for="aggProfit">骨料毛利（亿元）</label>
+          <input id="aggProfit" type="number" step="0.01" value="18" />
+        </div>
+        <div class="field">
+          <label for="concProfit">商混毛利（亿元）</label>
+          <input id="concProfit" type="number" step="0.01" value="1" />
+        </div>
+
+        <div class="field">
+          <label for="other">其他损益（亿元）</label>
+          <input id="other" type="number" step="0.01" value="15" />
+        </div>
+        <div class="field">
+          <label for="incomeTaxRate">所得税率（%）</label>
+          <input id="incomeTaxRate" type="number" step="0.01" value="20" />
+        </div>
+        <div class="field">
+          <label for="minority">少数股东损益（亿元）</label>
+          <input id="minority" type="number" step="0.01" value="4" />
+        </div>
+        <div class="field">
+          <label for="mode">快捷填充</label>
+          <input id="modeLabel" value="可用下方按钮载入 2021-2024 或四年平均值" disabled />
+        </div>
+
+        <div class="field full">
+          <div class="btns">
+            <button onclick="applyPreset('avg')">载入四年平均</button>
+            <button class="secondary" onclick="applyPreset('2024')">载入 2024</button>
+            <button class="secondary" onclick="applyPreset('2023')">载入 2023</button>
+            <button class="secondary" onclick="applyPreset('2022')">载入 2022</button>
+            <button class="secondary" onclick="applyPreset('2021')">载入 2021</button>
+            <button class="secondary" onclick="calc()">重新计算</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>测算结果</h2>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="k">水泥吨成本</div>
+          <div class="v" id="cementCostOut">0</div>
+        </div>
+        <div class="metric">
+          <div class="k">熟料吨成本</div>
+          <div class="v" id="clinkerCostOut">0</div>
+        </div>
+        <div class="metric">
+          <div class="k">主业毛利（亿元）</div>
+          <div class="v" id="mainGrossOut">0</div>
+        </div>
+        <div class="metric good">
+          <div class="k">营业利润测算（亿元）</div>
+          <div class="v" id="opProfitOut">0</div>
+        </div>
+        <div class="metric">
+          <div class="k">利润总额测算（亿元）</div>
+          <div class="v" id="pbtOut">0</div>
+        </div>
+        <div class="metric good">
+          <div class="k">归母净利润测算（亿元）</div>
+          <div class="v" id="npOut">0</div>
+        </div>
+        <div class="metric">
+          <div class="k">综合吨毛利（元/吨）</div>
+          <div class="v" id="grossPerTonOut">0</div>
+        </div>
+        <div class="metric">
+          <div class="k">综合吨净利（元/吨）</div>
+          <div class="v" id="netPerTonOut">0</div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top:18px;">
+        <div>
+          <h3>拆解</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>项目</th>
+                <th>数值</th>
+              </tr>
+            </thead>
+            <tbody id="breakdownBody"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3>建议你重点盯的变量</h3>
+          <p><span class="pill">水泥吨售价</span><span class="pill">熟料吨售价</span><span class="pill">煤炭成本</span><span class="pill">非煤制造成本</span><span class="pill">熟料系数</span></p>
+          <p><span class="pill">四费</span><span class="pill">税金及附加</span><span class="pill">骨料毛利</span><span class="pill">商混毛利</span><span class="pill">其他损益</span></p>
+          <div class="tip small">
+            对利润弹性最大的一般还是价格、煤炭、销量。若后面要把模型再往前推进一版，最值得补的是：区域价格、出口熟料占比、骨料销量和毛利率、投资收益。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>历史财报参考值与四年平均</h2>
+      <p class="muted small">下表优先列出你要求的字段，并补了几个最重要的辅助变量。2021-2024 的销量、加权吨售价、吨成本、四费，来自前面模型说明中整理的财报数据；水泥/熟料拆分口径、税金及附加、骨料/商混/其他损益为便于交互测算给出的近似参考值，可自行改成你后续整理的更精确数字。</p>
+      <table>
+        <thead>
+          <tr>
+            <th>年份</th>
+            <th>水泥销量<br>亿吨</th>
+            <th>熟料销量<br>亿吨</th>
+            <th>水泥吨售价<br>元/吨</th>
+            <th>熟料吨售价<br>元/吨</th>
+            <th>煤炭成本<br>元/吨</th>
+            <th>非煤制造成本<br>元/吨</th>
+            <th>四费<br>亿元</th>
+            <th>税金及附加<br>亿元</th>
+            <th>骨料毛利<br>亿元</th>
+            <th>商混毛利<br>亿元</th>
+            <th>其他损益<br>亿元</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+      <div class="footer">
+        默认拆分逻辑：按总销量拆成“水泥 + 熟料”以便交互；总销量、加权吨售价、加权吨成本、四费来自说明文档中的历史表格。你后续若把真实的分产品销量和税金补齐，只需改页面里的数据对象即可。
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>公式</h2>
+      <table>
+        <tbody>
+          <tr><td>水泥吨成本</td><td>非煤制造成本 + 熟料系数 × 煤炭成本</td></tr>
+          <tr><td>熟料吨成本</td><td>非煤制造成本 + 煤炭成本 + 熟料额外制造成本</td></tr>
+          <tr><td>主业毛利</td><td>水泥销量 × (水泥吨售价 - 水泥吨成本) + 熟料销量 × (熟料吨售价 - 熟料吨成本)</td></tr>
+          <tr><td>营业利润测算</td><td>主业毛利 + 骨料毛利 + 商混毛利 - 四费 - 税金及附加</td></tr>
+          <tr><td>利润总额测算</td><td>营业利润测算 + 其他损益</td></tr>
+          <tr><td>归母净利润测算</td><td>利润总额 × (1 - 所得税率) - 少数股东损益</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const historyData = {
+      "2021": {
+        cementVol: 26448, clinkerVol: 3952,
+        cementPrice: 371, clinkerPrice: 345,
+        coalCost: 113, nonCoalCost: 91,
+        clinkerCoef: 0.75, clinkerPremium: 10,
+        opex: 84.94, tax: 11.2, aggProfit: 10, concProfit: 2, other: 35, incomeTaxRate: 20, minority: 6
+      },
+      "2022": {
+        cementVol: 24506, clinkerVol: 3794,
+        cementPrice: 338, clinkerPrice: 317,
+        coalCost: 145, nonCoalCost: 86,
+        clinkerCoef: 0.75, clinkerPremium: 10,
+        opex: 92.49, tax: 10.8, aggProfit: 12, concProfit: 1.5, other: 24, incomeTaxRate: 20, minority: 5
+      },
+      "2023": {
+        cementVol: 24630, clinkerVol: 3870,
+        cementPrice: 298, clinkerPrice: 276,
+        coalCost: 120, nonCoalCost: 85,
+        clinkerCoef: 0.75, clinkerPremium: 10,
+        opex: 98.16, tax: 10.0, aggProfit: 15, concProfit: 1.2, other: 20, incomeTaxRate: 20, minority: 4.5
+      },
+      "2024": {
+        cementVol: 23300, clinkerVol: 3500,
+        cementPrice: 285, clinkerPrice: 260,
+        coalCost: 104, nonCoalCost: 84,
+        clinkerCoef: 0.75, clinkerPremium: 10,
+        opex: 94.48, tax: 9.5, aggProfit: 18, concProfit: 1.0, other: 15, incomeTaxRate: 20, minority: 4
+      }
+    };
+
+    function avgOf(key){
+      const years = Object.keys(historyData);
+      return years.reduce((s,y)=>s + Number(historyData[y][key] || 0),0) / years.length;
+    }
+
+    const avgPreset = {
+      cementVol: avgOf('cementVol'),
+      clinkerVol: avgOf('clinkerVol'),
+      cementPrice: avgOf('cementPrice'),
+      clinkerPrice: avgOf('clinkerPrice'),
+      coalCost: avgOf('coalCost'),
+      nonCoalCost: avgOf('nonCoalCost'),
+      clinkerCoef: avgOf('clinkerCoef'),
+      clinkerPremium: avgOf('clinkerPremium'),
+      opex: avgOf('opex'),
+      tax: avgOf('tax'),
+      aggProfit: avgOf('aggProfit'),
+      concProfit: avgOf('concProfit'),
+      other: avgOf('other'),
+      incomeTaxRate: avgOf('incomeTaxRate'),
+      minority: avgOf('minority')
+    };
+
+    function num(id){
+      return Number(document.getElementById(id).value || 0);
+    }
+
+    function setNum(id,val){
+      document.getElementById(id).value = (Math.round(val * 1000) 0);
+    }
+
+    function fmt(n, digits=2){
+      return Number(n).toLocaleString('zh-CN', {maximumFractionDigits:digits, minimumFractionDigits:digits});
+    }
+
+    function fillHistory(){
+      const body = document.getElementById('historyBody');
+      body.innerHTML = '';
+      const rows = [
+        ...Object.keys(historyData).sort(),
+        'avg'
+      ];
+      rows.forEach(y=>{
+        const d = y === 'avg' ? avgPreset : historyData[y];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${y === 'avg' ? '四年平均' : y}</td>
+          <td>${fmt(d.cementVol,0)}</td>
+          <td>${fmt(d.clinkerVol,0)}</td>
+          <td>${fmt(d.cementPrice,1)}</td>
+          <td>${fmt(d.clinkerPrice,1)}</td>
+          <td>${fmt(d.coalCost,1)}</td>
+          <td>${fmt(d.nonCoalCost,1)}</td>
+          <td>${fmt(d.opex,2)}</td>
+          <td>${fmt(d.tax,2)}</td>
+          <td>${fmt(d.aggProfit,2)}</td>
+          <td>${fmt(d.concProfit,2)}</td>
+          <td>${fmt(d.other,2)}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function applyPreset(year){
+      const d = year === 'avg' ? avgPreset : historyData[year];
+      Object.keys(d).forEach(k => {
+        if (document.getElementById(k)) setNum(k, d[k]);
+      });
+      document.getElementById('modeLabel').value = year === 'avg' ? '已载入四年平均' : `已载入 ${year} 年参考值`;
+      calc();
+    }
+
+    function calc(){
+      const cementVol = num('cementVol');   // 亿吨
+      const clinkerVol = num('clinkerVol'); // 亿吨
+      const cementPrice = num('cementPrice');
+      const clinkerPrice = num('clinkerPrice');
+      const coalCost = num('coalCost');
+      const nonCoalCost = num('nonCoalCost');
+      const clinkerCoef = num('clinkerCoef');
+      const clinkerPremium = num('clinkerPremium');
+      const opex = num('opex');
+      const tax = num('tax');
+      const aggProfit = num('aggProfit');
+      const concProfit = num('concProfit');
+      const other = num('other');
+      const incomeTaxRate = num('incomeTaxRate') ;
+      const minority = num('minority');
+
+      const cementCost = nonCoalCost + clinkerCoef * coalCost;
+      const clinkerCost = nonCoalCost + coalCost + clinkerPremium;
+
+      const cementGross = cementVol * (cementPrice - cementCost) ;
+      const clinkerGross = clinkerVol * (clinkerPrice - clinkerCost) ;
+      const mainGross = cementGross + clinkerGross;
+
+      const opProfit = mainGross + aggProfit + concProfit - opex - tax;
+      const pbt = opProfit + other;
+      const np = pbt * (1 - incomeTaxRate) - minority;
+
+      const totalVol = cementVol + clinkerVol;
+      const grossPerTon = totalVol ? (mainGross * 100 / totalVol) : 0;
+      const netPerTon = totalVol ? (np * 100 / totalVol) : 0;
+
+      document.getElementById('cementCostOut').textContent = fmt(cementCost,1);
+      document.getElementById('clinkerCostOut').textContent = fmt(clinkerCost,1);
+      document.getElementById('mainGrossOut').textContent = fmt(mainGross,2);
+      document.getElementById('opProfitOut').textContent = fmt(opProfit,2);
+      document.getElementById('pbtOut').textContent = fmt(pbt,2);
+      document.getElementById('npOut').textContent = fmt(np,2);
+      document.getElementById('grossPerTonOut').textContent = fmt(grossPerTon,1);
+      document.getElementById('netPerTonOut').textContent = fmt(netPerTon,1);
+
+      const rows = [
+        ['水泥收入（亿元）', cementVol * cementPrice ],
+        ['熟料收入（亿元）', clinkerVol * clinkerPrice ],
+        ['水泥毛利（亿元）', cementGross],
+        ['熟料毛利（亿元）', clinkerGross],
+        ['主业毛利（亿元）', mainGross],
+        ['骨料毛利（亿元）', aggProfit],
+        ['商混毛利（亿元）', concProfit],
+        ['四费（亿元）', -opex],
+        ['税金及附加（亿元）', -tax],
+        ['营业利润测算（亿元）', opProfit],
+        ['其他损益（亿元）', other],
+        ['利润总额测算（亿元）', pbt],
+        ['所得税（亿元）', -(pbt * incomeTaxRate)],
+        ['少数股东损益（亿元）', -minority],
+        ['归母净利润测算（亿元）', np]
+      ];
+      const body = document.getElementById('breakdownBody');
+      body.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${fmt(r[1],2)}</td></tr>`).join('');
+    }
+
+    fillHistory();
+    applyPreset('avg');
+  </script>
+</body>
+</html>
