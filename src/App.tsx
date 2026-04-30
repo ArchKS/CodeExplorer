@@ -12,6 +12,57 @@ export function App() {
   const [filter, setFilter] = useState<'all' | 'file' | 'directory'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 1.5 Flatten files for hash lookup
+  const allFiles = useMemo(() => {
+    const flatten = (items: FileItem[]): FileItem[] => {
+      return items.reduce((acc, item) => {
+        acc.push(item);
+        if (item.children) acc.push(...flatten(item.children));
+        return acc;
+      }, [] as FileItem[]);
+    };
+    return flatten([...shortSource, ...longSource]);
+  }, []);
+
+  // 2. Hash routing logic
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash) {
+        const item = allFiles.find(f => f.code === hash && f.type === 'file');
+        if (item) {
+          // If already selected, don't re-select
+          if (selectedFile?.path !== item.path) {
+            setSelectedFile({ path: item.path, name: item.name, prev: metadata[item.path]?.prev });
+          }
+        }
+      } else {
+        if (selectedFile) setSelectedFile(null);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Initial check
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [allFiles, metadata, selectedFile]); // Re-run if metadata loads to update prev or if selectedFile changes
+
+  useEffect(() => {
+    if (selectedFile) {
+      const item = allFiles.find(f => f.path === selectedFile.path);
+      if (item && window.location.hash !== `#${item.code}`) {
+        window.location.hash = item.code;
+      }
+      const intro = metadata[selectedFile.path]?.intro;
+      document.title = intro || selectedFile.name;
+    } else {
+      if (window.location.hash) {
+        window.history.pushState("", "Code Library", window.location.pathname + window.location.search);
+      }
+      document.title = "Code Library";
+    }
+  }, [selectedFile, allFiles, metadata]);
+
   // 1. 数据过滤与排序
   const filteredItems = useMemo(() => {
     let items: FileItem[] = [];
@@ -85,8 +136,14 @@ export function App() {
 
   useEffect(() => {
     const fetchMetadata = async () => {
-      const itemsToFetch = filteredItems.filter(item => !metadata[item.path]);
-      for (const item of itemsToFetch) {
+      const itemsToFetch = [...filteredItems];
+      if (selectedFile && !itemsToFetch.find(i => i.path === selectedFile.path)) {
+        const item = allFiles.find(i => i.path === selectedFile.path);
+        if (item) itemsToFetch.push(item);
+      }
+
+      const pendingItems = itemsToFetch.filter(item => !metadata[item.path]);
+      for (const item of pendingItems) {
         let fetchPath = '';
         if (item.type === 'file') fetchPath = item.path;
         else if (item.type === 'directory') {
@@ -133,7 +190,7 @@ export function App() {
       }
     };
     fetchMetadata();
-  }, [filteredItems]);
+  }, [filteredItems, selectedFile, allFiles]);
 
   const handleItemClick = (item: FileItem) => {
     if (item.type === 'directory') setHistory([...history, item.children || []]);
