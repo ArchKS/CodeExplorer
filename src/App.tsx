@@ -28,33 +28,43 @@ export function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
-      if (hash) {
-        const item = allFiles.find(f => f.code === hash && f.type === 'file');
-        if (item) {
-          // If already selected, don't re-select
-          if (selectedFile?.path !== item.path) {
-            setSelectedFile({ path: item.path, name: item.name, prev: metadata[item.path]?.prev });
-          }
-        }
-      } else {
-        if (selectedFile) setSelectedFile(null);
+      if (!hash) {
+        setSelectedFile(null);
+        return;
+      }
+      const item = allFiles.find(f => f.code === hash && f.type === 'file');
+      if (item && selectedFile?.path !== item.path) {
+        setSelectedFile({ path: item.path, name: item.name, prev: metadata[item.path]?.prev });
       }
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    handleHashChange(); // Initial check
+    
+    // Initial check - only if not already set
+    const initialHash = window.location.hash.slice(1);
+    if (initialHash && !selectedFile) {
+      const item = allFiles.find(f => f.code === initialHash && f.type === 'file');
+      if (item) setSelectedFile({ path: item.path, name: item.name, prev: metadata[item.path]?.prev });
+    }
 
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [allFiles, metadata, selectedFile]); // Re-run if metadata loads to update prev or if selectedFile changes
+  }, [allFiles]);
 
+  // 3. Sync selectedFile state to Hash and Title
   useEffect(() => {
     if (selectedFile) {
+      // Sync Hash
       const item = allFiles.find(f => f.path === selectedFile.path);
       if (item && window.location.hash !== `#${item.code}`) {
         window.location.hash = item.code;
       }
+      // Sync Title
       const intro = metadata[selectedFile.path]?.intro;
       document.title = intro || selectedFile.name;
+      // Sync Prev image if it loaded later
+      if (!selectedFile.prev && metadata[selectedFile.path]?.prev) {
+        setSelectedFile(prev => prev ? { ...prev, prev: metadata[selectedFile.path].prev } : null);
+      }
     } else {
       if (window.location.hash) {
         window.history.pushState("", "Code Library", window.location.pathname + window.location.search);
@@ -143,7 +153,10 @@ export function App() {
       }
 
       const pendingItems = itemsToFetch.filter(item => !metadata[item.path]);
-      for (const item of pendingItems) {
+      if (pendingItems.length === 0) return;
+
+      const results: Record<string, any> = {};
+      await Promise.all(pendingItems.map(async (item) => {
         let fetchPath = '';
         if (item.type === 'file') fetchPath = item.path;
         else if (item.type === 'directory') {
@@ -182,11 +195,15 @@ export function App() {
                 newMeta.prev = rawPath.startsWith('/') ? rawPath : '/' + rawPath;
               }
             }
-            setMetadata(prev => ({ ...prev, [item.path]: newMeta }));
+            results[item.path] = newMeta;
           } catch (e) {
-            setMetadata(prev => ({ ...prev, [item.path]: {} }));
+            results[item.path] = {};
           }
         }
+      }));
+
+      if (Object.keys(results).length > 0) {
+        setMetadata(prev => ({ ...prev, ...results }));
       }
     };
     fetchMetadata();
