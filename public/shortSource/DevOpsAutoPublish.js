@@ -1,10 +1,11 @@
 // Intro: 自动化发布脚本
 // Tag: 网页脚本
 
+
 // ==UserScript==
-// @name         DFCFW DevOps Auto Publish v3-gpt
+// @name         DFCFW DevOps Auto Publish
 // @namespace    codex
-// @version      0.2.3
+// @version      0.3.0
 // @description  自动串联研发交付流程、生产班次、审批、灰度与 Rolling 发布
 // @match        https://devops.dfcfw.com/devops/cicd/*
 // @grant        none
@@ -14,7 +15,6 @@
 (function () {
   'use strict';
 
-  
   const CONFIG_KEY = '__dfcfw_devops_auto_publish_config__';
   const RUN_KEY = '__dfcfw_devops_auto_publish_run__';
   const PANEL_ID = 'dfcfw-devops-auto-publish-panel';
@@ -23,7 +23,7 @@
   const ACTION_COOLDOWN_MS = 4000;
   const WAIT_COOLDOWN_MS = 15000;
   const MAX_LOGS = 120;
-  const DEFAULT_APP_NAMES = ['fd_groupchat_comp','fd_mgubatopic2025'];
+  const DEFAULT_APP_NAMES = ['fd_groupchat_comp','fd_mgubatopic2025','fd_guba_web2022','fd_clawsocial'];
 
   const DEFAULT_CONFIG = {
     appNames: [...DEFAULT_APP_NAMES],
@@ -33,6 +33,7 @@
     scheduleNamePrefix: '发布班次',
     autoMergeMr: true,
     allowDirectPush: true,
+    autoEnterSchedule: true,
   };
 
   const ROUTES = {
@@ -155,6 +156,9 @@
     if (!next.appName || !next.appNames.includes(next.appName)) {
       next.appName = next.appNames[0] || DEFAULT_APP_NAMES[0];
     }
+    next.autoMergeMr = next.autoMergeMr !== false;
+    next.allowDirectPush = next.allowDirectPush !== false;
+    next.autoEnterSchedule = next.autoEnterSchedule !== false;
     return next;
   }
 
@@ -222,6 +226,12 @@
     syncControlValue(state.ui.appName, state.config.appName || '');
     syncControlValue(state.ui.taskKeyword, state.config.taskKeyword || '');
     syncControlValue(state.ui.approvalSummary, state.config.approvalSummary || '');
+    if (state.ui.autoEnterSchedule) {
+      const desired = !!state.config.autoEnterSchedule;
+      if (state.ui.autoEnterSchedule.checked !== desired) {
+        state.ui.autoEnterSchedule.checked = desired;
+      }
+    }
     state.ui.status.textContent = state.run.active
       ? `运行中: ${state.run.lastStatus || '处理中'}`
       : `已停止: ${state.run.lastStatus || '待命'}`;
@@ -302,6 +312,16 @@
         color: #93c5fd;
       }
       #${PANEL_ID} .dap-tip { color: #94a3b8; margin-top: 8px; }
+      #${PANEL_ID} .dap-toggle-row { margin-bottom: 10px; }
+      #${PANEL_ID} .dap-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #e2e8f0; user-select: none; }
+      #${PANEL_ID} .dap-toggle input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        cursor: pointer;
+        accent-color: #2563eb;
+      }
+      #${PANEL_ID} .dap-toggle span { font-size: 12px; }
     `;
     document.documentElement.appendChild(style);
 
@@ -322,6 +342,12 @@
           <label class="dap-label">审批摘要（可空）</label>
           <input data-role="approval-summary" placeholder="为空时默认填今天日期" />
         </div>
+        <div class="dap-row dap-toggle-row">
+          <label class="dap-toggle">
+            <input type="checkbox" data-role="auto-enter-schedule" />
+            <span>自动进入生产班次</span>
+          </label>
+        </div>
         <div class="dap-actions">
           <button data-role="start">开始</button>
           <button class="dap-stop" data-role="stop">停止</button>
@@ -329,7 +355,7 @@
         </div>
         <div class="dap-row dap-status" data-role="status"></div>
         <pre data-role="log"></pre>
-        <div class="dap-tip">项目列表使用数组配置。审批摘要不填时，脚本会自动使用当天日期。任务关键字不填时，脚本不会替你随机选任务。</div>
+        <div class="dap-tip">项目列表使用数组配置。审批摘要不填时，脚本会自动使用当天日期。任务关键字不填时，脚本不会替你随机选任务。开关关闭时，脚本会在关联生产班次后停止，不自动进入。</div>
       </div>
     `;
     document.documentElement.appendChild(panel);
@@ -339,6 +365,7 @@
     state.ui.appName = panel.querySelector('[data-role="app-name"]');
     state.ui.taskKeyword = panel.querySelector('[data-role="task-keyword"]');
     state.ui.approvalSummary = panel.querySelector('[data-role="approval-summary"]');
+    state.ui.autoEnterSchedule = panel.querySelector('[data-role="auto-enter-schedule"]');
     state.ui.startBtn = panel.querySelector('[data-role="start"]');
     state.ui.stopBtn = panel.querySelector('[data-role="stop"]');
     state.ui.clearBtn = panel.querySelector('[data-role="clear"]');
@@ -346,6 +373,10 @@
 
     state.ui.appName.addEventListener('change', () => {
       state.config.appName = state.ui.appName.value.trim();
+      saveConfig();
+    });
+    state.ui.autoEnterSchedule.addEventListener('change', () => {
+      state.config.autoEnterSchedule = !!state.ui.autoEnterSchedule.checked;
       saveConfig();
     });
     state.ui.taskKeyword.addEventListener('change', () => {
@@ -360,6 +391,7 @@
       state.config.appName = state.ui.appName.value.trim();
       state.config.taskKeyword = state.ui.taskKeyword.value.trim();
       state.config.approvalSummary = state.ui.approvalSummary.value.trim();
+      state.config.autoEnterSchedule = !!state.ui.autoEnterSchedule.checked;
       saveConfig();
       if (!state.config.appName) {
         alert('请先选择项目名');
@@ -375,8 +407,12 @@
       log('已手动停止');
     });
     state.ui.clearBtn.addEventListener('click', () => {
-      state.run.logs = [];
-      saveRun();
+      localStorage.removeItem(CONFIG_KEY);
+      localStorage.removeItem(RUN_KEY);
+      state.config = loadConfig();
+      state.run = loadRun();
+      renderPanel();
+      console.log('[DevOpsAutoPublish] All cache cleared.');
     });
   }
 
@@ -1226,7 +1262,15 @@
     }
 
     if (!state.run.stage200NewRunObserved) {
-      if (!hasStage200NewRunStarted(summary)) {
+      // Allow short-circuiting when the promote button is visible+enabled even
+      // before we observe a brand-new trigger time/compile version. Some
+      // pipelines reuse the same compile version, which would otherwise wedge
+      // the script here forever.
+      const promoteReady = (() => {
+        const promote = findPromoteToProductionTrigger();
+        return promote && !isDisabled(promote);
+      })();
+      if (!hasStage200NewRunStarted(summary) && !promoteReady) {
         setStatus('已点击 MR 并部署，等待触发时间或编译版本更新');
         return;
       }
@@ -1458,6 +1502,27 @@
     return true;
   }
 
+  // Variant texts for the "进入生产班次" entry button. Some pages render the
+  // text with spaces (e.g. "进 入 生产班次") or split into multiple spans, so we
+  // try a few permutations. `norm` strips whitespace before comparing, so most
+  // variants collapse to the same canonical form — keeping multiple here also
+  // documents the variants we have seen in the wild.
+  const ENTER_SCHEDULE_TEXTS = [
+    '进入生产班次',
+    '进入生 产班次',
+    '进 入 生产班次',
+    '进 入 生 产 班 次',
+    '进入班次',
+  ];
+
+  function findEnterScheduleButton() {
+    return (
+      findPageClickableByText(ENTER_SCHEDULE_TEXTS) ||
+      findClickableByText(ENTER_SCHEDULE_TEXTS) ||
+      null
+    );
+  }
+
   // NEW: click "进入生产班次" then pick the schedule row inside the popup.
   async function enterCreatedSchedule() {
     // 1) Try an already-visible direct link first (covers the case where the
@@ -1466,6 +1531,7 @@
     if (directHref && !findDialogByText('已关联班次') && !findDialogByText('关联发布班次')) {
       state.run.enteredSchedule = true;
       saveRun();
+      log(`检测到生产班次入口链接，直接跳转: ${state.run.scheduleName}`);
       window.location.href = directHref;
       return true;
     }
@@ -1474,12 +1540,25 @@
     let dialog = findDialogByText('已关联班次') || findDialogByText('关联发布班次');
     if (!dialog) {
       await dismissSuccessNotice();
-      const enterBtn = findClickableByText('进入生产班次');
+      const enterBtn = findEnterScheduleButton();
       if (!enterBtn) {
-        setStatus('未找到"进入生产班次"按钮');
+        setStatus('未找到"进入生产班次"按钮，等待页面刷新');
         return false;
       }
+      if (isDisabled(enterBtn)) {
+        setStatus('"进入生产班次"按钮当前不可点击');
+        return false;
+      }
+      log(`点击「进入生产班次」: ${textOf(enterBtn).slice(0, 30)}`);
       clickElement(enterBtn);
+      await wait(800);
+      // The button may navigate directly to the schedule detail page instead
+      // of opening a dialog — short-circuit if that happened.
+      if (onRoute(ROUTES.deliveryScheduleDetail)) {
+        state.run.enteredSchedule = true;
+        saveRun();
+        return true;
+      }
       dialog = await waitFor(
         () => findDialogByText('已关联班次') || findDialogByText('关联发布班次'),
         6000,
@@ -1587,6 +1666,14 @@
     }
 
     if (!state.run.enteredSchedule) {
+      if (!state.config.autoEnterSchedule) {
+        setStatus(
+          state.run.scheduleName
+            ? `已关联生产班次「${state.run.scheduleName}」，开关关闭，等待手动进入生产班次`
+            : '已关联生产班次，开关关闭，等待手动进入生产班次',
+        );
+        return;
+      }
       await actOnce('enter-created-schedule', enterCreatedSchedule, WAIT_COOLDOWN_MS);
       if (!state.run.enteredSchedule) {
         setStatus('等待进入刚创建的生产班次');
@@ -1599,11 +1686,40 @@
     saveRun();
     const stage = parseQuery().get('stage') || '';
 
-    if (stage === '400' || bodyHas('关联生产班次') || bodyHas('进入生产班次')) {
+    // Stage 200 takes priority when we are explicitly on stage=200, OR the MR并部署
+    // button is visible and we haven't finished the MR/deploy step yet. The previous
+    // version routed to stage 400 too eagerly because "关联生产班次" exists in the
+    // page header from the very first render of stage 200, which made the script
+    // skip MR并部署 entirely on fresh pipelines.
+    const mrDeployVisible = !!findPageClickableByText('MR并部署');
+    const mrDeployClicked = !!(state.run.actions && state.run.actions['mr-deploy-click']);
+    const promoteVisible = !!findPromoteToProductionTrigger();
+    const stage200Active =
+      stage === '200' ||
+      (stage !== '400' && (mrDeployVisible || promoteVisible) && !state.run.scheduleLinked);
+
+    if (stage200Active && !mrDeployClicked) {
+      await handleStage200();
+      return;
+    }
+    // Stage 200 may still be busy with the post-deploy "推进到生产发布" step even
+    // after we've clicked MR并部署. Stay there until the script either navigates
+    // away or the stage 400 entry point becomes clearly available.
+    if (stage200Active && mrDeployClicked && !state.run.scheduleLinked && promoteVisible) {
+      await handleStage200();
+      return;
+    }
+
+    if (
+      stage === '400' ||
+      bodyHas('关联生产班次') ||
+      bodyHas('进入生产班次') ||
+      bodyHas('已关联班次')
+    ) {
       await handleStage400();
       return;
     }
-    if (stage === '200' || bodyHas('MR并部署')) {
+    if (stage === '200' || mrDeployVisible) {
       await handleStage200();
       return;
     }
