@@ -1,5 +1,5 @@
 // Intro: 自动化发布脚本
-// Tag: 网页脚本
+// Tag: 工作
 
 
 // ==UserScript==
