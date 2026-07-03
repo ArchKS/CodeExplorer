@@ -2,6 +2,7 @@
 #Prev: ../img/buyselltimeline.png
 #Tag: 投资工具
 
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -87,21 +88,14 @@ TRADES = [
         "annualized": None,
     },
     {
-        "name": "牧原股份",
+        "name": "牧原",
         "buy_date": "2023-05-05",
         "sell_date": "2024-10-10",
         "buy_amount": 34.5,
         "profit": 1.5,
         "annualized": None,
     },
-    {
-        "name": "中矿资源",
-        "buy_date": "2024-04-25",
-        "sell_date": "2026-05-08",
-        "buy_amount": 64.4,
-        "profit": 112.1,
-        "annualized": None,
-    },
+   
     {
         "name": "药明生物",
         "buy_date": "2024-06-12",
@@ -117,14 +111,31 @@ TRADES = [
     #     "position_pct": 25,
     #     "broke_even": True,
     # },
-    {
-        "name": "天齐锂业",
+     {
+        "name": "中矿",
+        "buy_date": "2024-04-25",
+        "sell_date": "2026-05-08",
+        "buy_amount": 80,
+        "profit": 112.1,
+        "annualized": None,
+    },
+        {
+        "name": "天齐",
         "buy_date": "2026-03-12",
         "sell_date": "2026-05-18",
         "buy_amount": 134.1,
         "profit": 22.2,
         "annualized": None,
     },
+    {
+         "name": "锂矿等效",
+        "buy_date": "2024-04-25",
+        "sell_date": "2026-05-18",
+        "buy_amount": 80,
+        "profit": 134.3,
+        "annualized": None, 
+    }
+
 ]
 
 # 图上"截至"日期（用于未清仓标的的当前点位）；默认今天
