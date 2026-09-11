@@ -4,15 +4,17 @@ Date: 2025.03.11
 Prev: ../img/cagrPrev.png
 Tag: 投资工具
  -->
-<!DOCTYPE html>
-<html lang="en">
 
+
+
+<!DOCTYPE html>
+<!-- ai coding: 扩展单输入框 CAGR 计算器以支持起止年月区间 2026/09/11: 14:11 -->
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAGR</title>
+    <title>收益率计算器</title>
     <style>
-        /* ==================== 基础样式 ==================== */
         * {
             margin: 0;
             padding: 0;
@@ -20,155 +22,244 @@ Tag: 投资工具
             outline: none;
         }
 
+        /* ai coding: 将艳丽渐变背景改为克制的浅灰蓝，并弱化标题与卡片阴影 2026/09/11: 14:12 */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             min-height: 100vh;
             padding: 40px 20px;
+            background: #eef1f4;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
         }
 
-        /* ==================== 页面标题 ==================== */
         .page-title {
-            text-align: center;
-            color: white;
-            font-size: 32px;
             margin-bottom: 40px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            color: #1f2937;
+            font-size: 32px;
+            text-align: center;
         }
 
-        /* ==================== 布局容器 ==================== */
         .calculators-wrapper {
-            max-width: 1400px;
-            margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
             gap: 30px;
+            max-width: 1100px;
+            margin: 0 auto;
         }
 
         .calculator-section {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
+            background: white;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            border-radius: 16px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
         }
 
-        /* ==================== 区块标题 ==================== */
         .section-title {
-            color: #333;
             margin-bottom: 10px;
+            padding-bottom: 10px;
+            color: #333;
             font-size: 24px;
             border-bottom: 3px solid #667eea;
-            padding-bottom: 10px;
         }
 
         .subtitle {
+            margin-bottom: 25px;
             color: #666;
             font-size: 14px;
-            margin-bottom: 25px;
         }
 
-        /* ==================== 输入框样式 ==================== */
         .input-group {
             margin-bottom: 25px;
         }
 
         .input-group label {
             display: block;
-            color: #555;
-            font-weight: 600;
             margin-bottom: 8px;
+            color: #555;
             font-size: 14px;
+            font-weight: 600;
         }
 
-        .input-group input,
-        .calc-row input {
+        .input-group input {
             width: 100%;
             padding: 12px 16px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 16px;
-            transition: all 0.3s;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        .input-group input:focus,
-        .calc-row input:focus {
+        .input-group input:focus {
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .hint {
+            margin-top: 5px;
             color: #999;
             font-size: 12px;
-            margin-top: 5px;
+            line-height: 1.6;
         }
 
-        /* ==================== 按钮样式 ==================== */
-        .btn-primary {
-            width: 100%;
-            padding: 14px;
-            background: #000;
-            color: white;
+        /* ai coding: 将按钮改为苹果式光泽跟随、空间倾斜与弹簧回弹交互 2026/09/11: 14:33 */
+        button {
             border: none;
             border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
+            --pointer-x: 50%;
+            --pointer-y: 50%;
+            --rotate-x: 0deg;
+            --rotate-y: 0deg;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 52px;
+            padding: 8px 9px 8px 19px;
+            overflow: hidden;
+            font-size: 15px;
+            font-weight: 650;
+            letter-spacing: 0.04em;
+            transform: perspective(700px) rotateX(0) rotateY(0) scale(1);
+            transform-style: preserve-3d;
+            will-change: transform;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            transition:
+                transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 420ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 260ms ease;
+        }
+
+        .button-mark {
+            position: relative;
+            display: grid;
+            flex: 0 0 34px;
+            width: 34px;
+            height: 34px;
+            place-items: center;
+            font-size: 18px;
+            line-height: 1;
+            transform: translateZ(22px);
+            transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1), background 260ms ease;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
             margin-top: 10px;
+            color: white;
+            background: #000;
+            color: #fff;
+            background:
+                radial-gradient(circle 150px at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.24), transparent 60%),
+                linear-gradient(180deg, #353538 0%, #1d1d1f 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 14px;
+            box-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.16) inset,
+                0 8px 20px rgba(15, 23, 42, 0.18),
+                0 2px 5px rgba(15, 23, 42, 0.12);
+        }
+
+        .btn-primary:hover,
+        .btn-clear:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary .button-mark {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.13);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 50%;
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            transform: perspective(700px) rotateX(var(--rotate-x)) rotateY(var(--rotate-y)) translateY(-2px) scale(1.012);
+            box-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.18) inset,
+                0 14px 30px rgba(15, 23, 42, 0.22),
+                0 4px 9px rgba(15, 23, 42, 0.12);
         }
 
-        .btn-primary:active {
-            transform: translateY(0);
+        .btn-primary:hover .button-mark {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(3px) translateZ(28px);
         }
 
         .btn-clear {
             width: 120px;
             height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-            border: 2px solid #eee;
-            background: #000;
-            border-radius: 8px;
-            font-weight: 600;
-            color: #fff;
-            transition: all 0.2s;
+            width: 100%;
             margin-top: 20px;
+            color: #fff;
+            background: #000;
+            color: #3a3a3c;
+            background:
+                radial-gradient(circle 150px at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.95), transparent 62%),
+                rgba(246, 246, 248, 0.88);
+            border: 1px solid rgba(60, 60, 67, 0.12);
+            border-radius: 14px;
+            box-shadow:
+                0 1px 0 #fff inset,
+                0 5px 14px rgba(15, 23, 42, 0.07);
+            backdrop-filter: blur(14px);
+        }
+
+        .btn-clear .button-mark {
+            color: #636366;
+            background: rgba(120, 120, 128, 0.1);
+            border-radius: 50%;
         }
 
         .btn-clear:hover {
             background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            border-color: rgba(60, 60, 67, 0.18);
+            transform: perspective(700px) rotateX(var(--rotate-x)) rotateY(var(--rotate-y)) translateY(-2px) scale(1.012);
+            box-shadow:
+                0 1px 0 #fff inset,
+                0 12px 24px rgba(15, 23, 42, 0.1);
         }
 
-        /* ==================== 结果显示样式 ==================== */
-        .result-box {
-            margin-top: 30px;
-            padding: 25px;
-            background: #eee;
-            border-radius: 12px;
+        .btn-clear:hover .button-mark {
+            color: #1d1d1f;
+            background: rgba(120, 120, 128, 0.14);
+            transform: rotate(-22deg) translateZ(24px);
+        }
+
+        button:active {
+            transform: perspective(700px) scale(0.965);
+            transition-duration: 90ms;
+            box-shadow: 0 2px 7px rgba(15, 23, 42, 0.12);
+        }
+
+        button:focus-visible {
+            outline: 3px solid rgba(0, 113, 227, 0.25);
+            outline-offset: 4px;
+        }
+
+        .result-box,
+        .cagr-result {
             display: none;
+            margin-top: 25px;
+            padding: 25px;
+            background: #f5f7fa;
+            border-radius: 12px;
         }
 
-        .result-box.show {
+        .result-box.show,
+        .cagr-result.show {
             display: block;
-            animation: slideIn 0.3s ease-out;
+            animation: slide-in 0.3s ease-out;
         }
 
-        @keyframes slideIn {
+        @keyframes slide-in {
             from {
                 opacity: 0;
                 transform: translateY(-10px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -178,19 +269,19 @@ Tag: 投资工具
         .result-item {
             margin-bottom: 15px;
             padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            border-bottom: 1px solid #ddd;
         }
 
-        .result-item:last-child {
+        .result-item:last-of-type {
             margin-bottom: 0;
             padding-bottom: 0;
             border-bottom: none;
         }
 
         .result-label {
+            margin-bottom: 5px;
             color: #555;
             font-size: 13px;
-            margin-bottom: 5px;
             font-weight: 500;
         }
 
@@ -208,71 +299,44 @@ Tag: 投资工具
             color: #ef4444;
         }
 
-        .result-text {
-            font-size: 24px;
-            font-weight: 700;
-            color: #667eea;
-            margin-left: 10px;
-        }
-
         .detail-info {
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.5);
-            font-size: 13px;
             color: #666;
+            font-size: 13px;
+            line-height: 1.7;
+            border-top: 1px solid #ddd;
         }
 
-        /* ==================== 错误提示 ==================== */
         .error-msg {
+            display: none;
+            margin-top: 10px;
             color: #ef4444;
             font-size: 14px;
-            margin-top: 10px;
-            display: none;
         }
 
         .error-msg.show {
             display: block;
         }
 
-        /* ==================== CAGR计算器特定样式 ==================== */
-        .calc-row {
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+        /* ai coding: 在系统要求减少动态效果时关闭按钮空间动画 2026/09/11: 14:33 */
+        @media (prefers-reduced-motion: reduce) {
+            button,
+            .button-mark {
+                transition-duration: 0.01ms !important;
+            }
+
+            button:hover,
+            button:active {
+                transform: none;
+            }
         }
 
-        .calc-row label {
-            color: #555;
-            font-weight: 600;
-            font-size: 14px;
-            min-width: 80px;
-        }
-
-        .calc-row input {
-            width: 120px;
-            height: 40px;
-            padding: 10px;
-            font-size: 14px;
-        }
-
-        .calc-row input.expr-input {
-            width: 280px;
-        }
-
-        .cagr-result {
-            padding: 20px;
-            border-radius: 12px;
-            background: #f5f7fa;
-            margin-bottom: 15px;
-            font-size: 16px;
-            color: #333;
-        }
-
-        /* ==================== 响应式设计 ==================== */
         @media (max-width: 768px) {
+            body {
+                padding: 24px 14px;
+            }
+
             .calculators-wrapper {
                 grid-template-columns: 1fr;
             }
@@ -284,39 +348,35 @@ Tag: 投资工具
             .page-title {
                 font-size: 24px;
             }
-
-            .calc-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .calc-row input {
-                width: 100%;
-            }
-
-            .calc-row input.expr-input {
-                width: 100%;
-            }
         }
     </style>
 </head>
-
 <body>
+    <h1 class="page-title">收益率计算器</h1>
 
-    <div class="calculators-wrapper">
-        <!-- ==================== 年化收益率计算器 ==================== -->
-        <div class="calculator-section">
+    <main class="calculators-wrapper">
+        <section class="calculator-section">
             <h2 class="section-title">📈 年化数组</h2>
-            <p class="subtitle">输入每年的收益率,计算年化收益率和总收益率</p>
+            <p class="subtitle">输入每年的收益率，计算年化收益率和总收益率</p>
 
             <div class="input-group">
                 <label for="returns">年度收益率 (%)</label>
-                <input type="text" id="returns" placeholder="0.58,5.23,24,164.8" autocomplete="off"
-                    value="0.58,5.23,24,164.8">
-                <div class="hint">用逗号分隔每年的收益率,支持负数</div>
+                <input
+                    type="text"
+                    id="returns"
+                    placeholder="0.58, 5.23, 24, 164.8"
+                    autocomplete="off"
+                    value="0.58,5.23,24,164.8"
+                >
+                <div class="hint">用逗号分隔每年的收益率，支持负数</div>
             </div>
 
-            <button class="btn-primary" onclick="calculateAnnualReturn()">计算</button>
+            <!-- ai coding: 为计算按钮加入文字层与独立箭头徽章 2026/09/11: 14:24 -->
+            <button class="btn-primary" id="annual-calculate" type="button">计算</button>
+            <button class="btn-primary" id="annual-calculate" type="button">
+                <span>计算收益</span>
+                <span class="button-mark" aria-hidden="true">↗</span>
+            </button>
             <div class="error-msg" id="annual-error"></div>
 
             <div class="result-box" id="annual-result">
@@ -330,313 +390,261 @@ Tag: 投资工具
                 </div>
                 <div class="detail-info" id="detail-info"></div>
             </div>
-        </div>
+        </section>
 
-        <!-- ==================== CAGR 计算工具 ==================== -->
-        <div class="calculator-section">
+        <section class="calculator-section">
             <h2 class="section-title">💰 CAGR</h2>
-            <p class="subtitle">计算收益率、年化收益率和自定义表达式</p>
+            <!-- ai coding: 增加四段式起止年月输入说明和示例 2026/09/11: 14:11 -->
+            <p class="subtitle">输入两个数计算总收益率；输入年数或起止年月，同时计算年化收益率</p>
 
-            <div class="calc-row ret-calc">
-                <label>收益率:</label>
-                <input type="text" id="ret-start" placeholder="起始价">
-                <input type="text" id="ret-end" placeholder="终点价">
+            <div class="input-group">
+                <label for="cagr-input">起始值、终值、年数或起止年月（可选）</label>
+                <input
+                    type="text"
+                    id="cagr-input"
+                    placeholder="例如：10, 20, 2021/6, 2026/1"
+                    autocomplete="off"
+                >
+                <div class="hint">
+                    两个数：起始值, 终值<br>
+                    三个数：起始值, 终值, 年数<br>
+                    四个数：起始值, 终值, 起始年月, 结束年月<br>
+                    年月支持 2021.6 或 2021/6 格式
+                </div>
             </div>
 
-            <div class="calc-row annual-calc">
-                <label>年化收益:</label>
-                <input type="text" id="ann-start" placeholder="起始价">
-                <input type="text" id="ann-end" placeholder="终点价">
-                <input type="text" id="ann-years" placeholder="年数">
+            <div class="error-msg" id="cagr-error"></div>
+
+            <div class="cagr-result" id="cagr-result">
+                <div class="result-item" id="cagr-annual-item">
+                    <div class="result-label">年化收益率</div>
+                    <div class="result-value" id="cagr-annual-value"></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">总收益率</div>
+                    <div class="result-value" id="cagr-total-value"></div>
+                </div>
+                <div class="detail-info" id="cagr-detail-info"></div>
             </div>
 
-            <!-- <div class="calc-row expr-calc">
-                <label>表达式:</label>
-                <input type="text" class="expr-input" id="expr" placeholder="输入计算表达式">
-            </div> -->
+            <!-- ai coding: 为清空按钮加入配套文字层与旋转徽章 2026/09/11: 14:24 -->
+            <button class="btn-clear" id="cagr-clear" type="button">CLEAR</button>
+            <button class="btn-clear" id="cagr-clear" type="button">
+                <span>清空输入</span>
+                <span class="button-mark" aria-hidden="true">↺</span>
+            </button>
+        </section>
+    </main>
 
-            <div class="cagr-result">
-                Result: <span class="result-text" id="cagr-result-text"></span>
-            </div>
+    <script>
+        const returnsInput = document.getElementById('returns');
+        const annualResultBox = document.getElementById('annual-result');
+        const annualError = document.getElementById('annual-error');
+        const annualizedValue = document.getElementById('annualized-value');
+        const totalValue = document.getElementById('total-value');
+        const detailInfo = document.getElementById('detail-info');
 
-            <button class="btn-clear" onclick="clearCAGR()">CLEAR</button>
-        </div>
-    </div>
-</body>
-
-
-<script>
-    // ==================== 年化收益率计算器 JS ====================
-    const returnsInput = document.getElementById('returns');
-    const annualResultBox = document.getElementById('annual-result');
-    const annualError = document.getElementById('annual-error');
-    const annualizedValue = document.getElementById('annualized-value');
-    const totalValue = document.getElementById('total-value');
-    const detailInfo = document.getElementById('detail-info');
-
-    // 回车键触发计算
-    returnsInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') calculateAnnualReturn();
-    });
-
-    function calculateAnnualReturn() {
-        // 重置显示
-        annualResultBox.classList.remove('show');
-        annualError.classList.remove('show');
-
-        const inputValue = returnsInput.value.trim();
-
-        if (!inputValue) {
-            showError(annualError, '请输入年度收益率');
-            return;
+        function parseNumberList(value) {
+            const parts = value.trim().split(/[，,\s]+/).filter(Boolean);
+            const numbers = parts.map(Number);
+            return numbers.every(Number.isFinite) ? numbers : null;
         }
 
-        // 解析输入
-        const returns = inputValue.split(',').map(s => {
-            const num = parseFloat(s.trim());
-            return isNaN(num) ? null : num;
-        });
-
-        // 验证输入
-        if (returns.some(r => r === null)) {
-            showError(annualError, '输入格式有误,请确保每个收益率都是有效数字');
-            return;
+        function setReturnColor(element, value) {
+            element.className = `result-value ${value >= 0 ? 'positive' : 'negative'}`;
         }
 
-        if (returns.length === 0) {
-            showError(annualError, '请至少输入一个年度收益率');
-            return;
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.add('show');
         }
 
-        // 计算总收益率
-        let totalReturn = 1;
-        returns.forEach(r => {
-            totalReturn *= (1 + r / 100);
-        });
-        totalReturn = (totalReturn - 1) * 100;
+        function calculateAnnualReturn() {
+            annualResultBox.classList.remove('show');
+            annualError.classList.remove('show');
 
-        // 计算年化收益率
-        const years = returns.length;
-        const annualizedReturn = (Math.pow(1 + totalReturn / 100, 1 / years) - 1) * 100;
-
-        // 显示结果
-        annualizedValue.textContent = annualizedReturn.toFixed(2) + '%';
-        totalValue.textContent = totalReturn.toFixed(2) + '%';
-
-        // 设置颜色
-        annualizedValue.className = 'result-value ' + (annualizedReturn >= 0 ? 'positive' : 'negative');
-        totalValue.className = 'result-value ' + (totalReturn >= 0 ? 'positive' : 'negative');
-
-        // 显示详细信息
-        detailInfo.innerHTML = `
-                <strong>计算详情:</strong><br>
-                投资年限: ${years} 年<br>
-                各年收益率: ${returns.map(r => r.toFixed(2) + '%').join(', ')}<br>
-                假设初始投资 10,000 元,最终价值: ${(10000 * (1 + totalReturn / 100)).toFixed(2)} 元
-            `;
-
-        annualResultBox.classList.add('show');
-    }
-
-    function showError(element, message) {
-        element.textContent = message;
-        element.classList.add('show');
-    }
-
-    // ==================== CAGR 计算器 JS ====================
-    const cagrInputs = [
-        document.getElementById('ret-start'),
-        document.getElementById('ret-end'),
-        document.getElementById('ann-start'),
-        document.getElementById('ann-end'),
-        document.getElementById('ann-years'),
-        // document.getElementById('expr')
-    ];
-    const cagrResultText = document.getElementById('cagr-result-text');
-
-    // 实时计算
-    cagrInputs.forEach(input => {
-        input.addEventListener('input', calculateCAGR);
-    });
-
-    function calculateCAGR(event) {
-        const parentRow = event.target.closest('.calc-row');
-        if (!parentRow) return;
-
-        const inputs = Array.from(parentRow.querySelectorAll('input'));
-        const values = inputs.map(inp => inp.value);
-        let result = null;
-
-        if (parentRow.classList.contains('ret-calc')) {
-            // 收益率计算
-            const start = Number(values[0]);
-            const end = Number(values[1]);
-            if (start && end) {
-                result = ((end - start) * 100 / start).toFixed(2) + '%';
-            }
-        } else if (parentRow.classList.contains('annual-calc')) {
-            // 年化收益率计算
-            const start = Number(values[0]);
-            const end = Number(values[1]);
-            const years = Number(values[2]);
-            if (start && end && years) {
-                result = ((Math.pow(end / start, 1 / years) - 1) * 100).toFixed(2) + '%';
-            }
-        } else if (parentRow.classList.contains('expr-calc')) {
-            // 表达式计算
-            try {
-                result = eval(values[0]).toFixed(2);
-            } catch (e) {
-                result = '表达式错误';
-            }
-        }
-
-        if (result) {
-            cagrResultText.textContent = result;
-        }
-    }
-
-    function clearCAGR() {
-        cagrInputs.forEach(input => input.value = '');
-        cagrResultText.textContent = '';
-    }
-
-    // ==================== 控制台监控脚本 ====================
-    (function () {
-        const isDev = location.host.indexOf('code.juejin.cn') === -1 && location.host.indexOf('aicoding.juejin.cn') === -1;
-
-        if (typeof BigInt === 'function' && !BigInt.prototype.toJSON) {
-            BigInt.prototype.toJSON = function () {
-                return this + 'n';
-            };
-        }
-
-        const createCircularReplacer = () => {
-            const seen = new WeakSet();
-            return (key, value) => {
-                if (typeof value === 'object' && value !== null) {
-                    if (seen.has(value)) {
-                        return Object.prototype.toString.call(value);
-                    }
-                    seen.add(value);
-                }
-                return value;
-            };
-        };
-
-        function stringifyLog(...args) {
-            return args.map(arg => {
-                const prototypeString = Object.prototype.toString.call(arg);
-                try {
-                    if (arg && ['[object Object]', '[object Array]'].includes(prototypeString)) {
-                        return JSON.stringify(arg, createCircularReplacer(), 2);
-                    } else if (arg === null || ['string', 'boolean', 'number', 'symbol', 'undefined', 'bigint'].includes(typeof arg)) {
-                        return String(arg);
-                    } else if (arg?.toString) {
-                        return arg.toString();
-                    } else {
-                        return prototypeString;
-                    }
-                } catch (e) {
-                    return prototypeString;
-                }
-            });
-        }
-
-        function stringifyError(error) {
-            if (!error) return '';
-            const stackInfo = error.stack?.toString() || '';
-            return stackInfo ? stackInfo : error.message + '\n';
-        }
-
-        function sendMessage(type, ...args) {
-            if (window.parent !== window) {
-                window.parent.postMessage({
-                    msgType: 'Console',
-                    type,
-                    value: stringifyLog(...args),
-                    from: 'Runner'
-                }, isDev ? '*' : location.protocol + '//' + 'code.juejin.cn');
-            }
-        }
-
-        function logWindowOnError(event) {
-            let msg = event.message;
-            if (event.filename) {
-                msg += event.filename.replace(location.origin, '');
-            }
-            if (event.lineno || event.colno) {
-                msg += ':' + event.lineno + ':' + event.colno;
-            }
-            sendMessage('error', msg, stringifyError(event.error));
-        }
-
-        function logResourceError(event) {
-            const { target } = event;
-            if (target && ['link', 'video', 'script', 'img', 'audio'].includes(target.localName)) {
-                const src = target.href || target.src || target.currentSrc || '';
-                sendMessage('error', 'GET <' + target.localName + '> error: ' + src);
-            }
-        }
-
-        function logUnhandledRejection(event) {
-            const error = event?.reason ? event.reason : event;
-            sendMessage('error', 'Uncaught (in promise) ', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
-            });
-        }
-
-        const handleConsoleMessage = (event) => {
-            const msg = event.data;
-            const expectedOrigin = location.protocol + '//' + 'code.juejin.cn';
-
-            if (!isDev && event.origin !== expectedOrigin) {
-                console.error('event origin ' + event.origin + ' is different from expected:' + expectedOrigin);
+            const returns = parseNumberList(returnsInput.value);
+            if (!returns || returns.length === 0) {
+                showError(annualError, '请输入有效的年度收益率');
                 return;
             }
 
-            if (msg?.msgType === 'Eval') {
-                const cmd = msg.data || '';
-                let result;
-                try {
-                    result = window.eval('(' + cmd + ')');
-                } catch (e) {
-                    try {
-                        result = window.eval(cmd);
-                    } catch (error) {
-                        sendMessage('error', stringifyError(error));
-                    }
-                }
-                setTimeout(() => {
-                    if (result) {
-                        sendMessage('log', ...stringifyLog(result));
-                    }
-                });
+            const growthMultiple = returns.reduce((total, current) => total * (1 + current / 100), 1);
+            if (growthMultiple < 0) {
+                showError(annualError, '累计资产为负时无法计算年化收益率');
+                return;
             }
-        };
 
-        // 初始化监控
-        (() => {
-            const supportType = ['log', 'info', 'warn', 'error', 'table'];
-            const oldConsoleMethod = {};
+            const totalReturn = (growthMultiple - 1) * 100;
+            const annualizedReturn = (Math.pow(growthMultiple, 1 / returns.length) - 1) * 100;
 
-            supportType.forEach(key => {
-                oldConsoleMethod[key] = window.console[key];
-                window.console[key] = (...args) => {
-                    sendMessage(key, ...args);
-                    oldConsoleMethod[key](...args);
-                };
+            annualizedValue.textContent = `${annualizedReturn.toFixed(2)}%`;
+            totalValue.textContent = `${totalReturn.toFixed(2)}%`;
+            setReturnColor(annualizedValue, annualizedReturn);
+            setReturnColor(totalValue, totalReturn);
+
+            detailInfo.innerHTML = `
+                <strong>计算详情：</strong><br>
+                投资年限：${returns.length} 年<br>
+                各年收益率：${returns.map(value => `${value.toFixed(2)}%`).join(', ')}<br>
+                假设初始投资 10,000 元，最终价值：${(10000 * growthMultiple).toFixed(2)} 元
+            `;
+            annualResultBox.classList.add('show');
+        }
+
+        returnsInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') calculateAnnualReturn();
+        });
+        document.getElementById('annual-calculate').addEventListener('click', calculateAnnualReturn);
+
+        const cagrInput = document.getElementById('cagr-input');
+        const cagrResult = document.getElementById('cagr-result');
+        const cagrError = document.getElementById('cagr-error');
+        const cagrAnnualItem = document.getElementById('cagr-annual-item');
+        const cagrAnnualValue = document.getElementById('cagr-annual-value');
+        const cagrTotalValue = document.getElementById('cagr-total-value');
+        const cagrDetailInfo = document.getElementById('cagr-detail-info');
+
+        // ai coding: 解析两段、三段及带起止年月的四段式 CAGR 输入 2026/09/11: 14:11
+        // ai coding: 解析多种 CAGR 输入并将年月差值固定显示一位小数 2026/09/11: 14:15
+        function parseYearMonth(value) {
+            const match = value.trim().match(/^(\d{4})(?:[./](\d{1,2}))?$/);
+            if (!match) return null;
+
+            const year = Number(match[1]);
+            const month = match[2] ? Number(match[2]) : 1;
+            if (month < 1 || month > 12) return null;
+
+            return {
+                year,
+                month,
+                monthIndex: year * 12 + month - 1,
+                label: `${year}年${month}月`
+            };
+        }
+
+        function parseCagrInput(value) {
+            let parts = value.trim().split(/[，,]+/).map(part => part.trim()).filter(Boolean);
+            if (parts.length === 1) {
+                parts = value.trim().split(/\s+/).filter(Boolean);
+            }
+
+            if (![2, 3, 4].includes(parts.length)) return null;
+
+            const start = Number(parts[0]);
+            const end = Number(parts[1]);
+            if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+
+            if (parts.length === 2) {
+                return { start, end, years: null, periodText: '', inputCount: 2 };
+            }
+
+            if (parts.length === 3) {
+                const years = Number(parts[2]);
+                if (!Number.isFinite(years)) return null;
+                return { start, end, years, periodText: `${years} 年`, inputCount: 3 };
+            }
+
+            const startDate = parseYearMonth(parts[2]);
+            const endDate = parseYearMonth(parts[3]);
+            if (!startDate || !endDate) return null;
+
+            const totalMonths = endDate.monthIndex - startDate.monthIndex;
+            const years = totalMonths / 12;
+            const wholeYears = Math.floor(totalMonths / 12);
+            const remainingMonths = totalMonths % 12;
+            const durationParts = [];
+            if (wholeYears) durationParts.push(`${wholeYears} 年`);
+            if (remainingMonths) durationParts.push(`${remainingMonths} 个月`);
+
+            return {
+                start,
+                end,
+                years,
+                inputCount: 4,
+                periodText: `${startDate.label} 至 ${endDate.label}（${durationParts.join(' ') || '0 个月'}，${years.toFixed(4)} 年）`
+            };
+        }
+
+        // ai coding: 根据输入数量自动计算总收益率、指定年数或年月区间的年化收益率 2026/09/11: 14:11
+        function calculateCAGR() {
+            cagrResult.classList.remove('show');
+            cagrError.classList.remove('show');
+
+            if (!cagrInput.value.trim()) return;
+
+            const parsed = parseCagrInput(cagrInput.value);
+            if (!parsed) {
+                showError(cagrError, '请输入 2、3 或 4 段有效内容，例如：10, 20, 2021/6, 2026/1');
+                return;
+            }
+
+            const { start, end, years, periodText, inputCount } = parsed;
+            if (start === 0) {
+                showError(cagrError, '起始值不能为 0');
+                return;
+            }
+
+            const totalReturn = ((end - start) / start) * 100;
+            cagrTotalValue.textContent = `${totalReturn.toFixed(2)}%`;
+            setReturnColor(cagrTotalValue, totalReturn);
+
+            if (inputCount >= 3) {
+                if (start < 0 || end < 0 || years <= 0) {
+                    showError(cagrError, '计算年化收益率时，数值不能为负，且结束年月必须晚于起始年月');
+                    return;
+                }
+
+                const annualizedReturn = (Math.pow(end / start, 1 / years) - 1) * 100;
+                cagrAnnualValue.textContent = `${annualizedReturn.toFixed(2)}%`;
+                setReturnColor(cagrAnnualValue, annualizedReturn);
+                cagrAnnualItem.style.display = '';
+                cagrDetailInfo.textContent = `从 ${start} 增长至 ${end}，周期：${periodText}`;
+            } else {
+                cagrAnnualItem.style.display = 'none';
+                cagrDetailInfo.textContent = `从 ${start} 变化至 ${end}`;
+            }
+
+            cagrResult.classList.add('show');
+        }
+
+        // ai coding: 根据指针位置驱动按钮高光与轻微三维倾斜 2026/09/11: 14:33
+        const motionButtons = document.querySelectorAll('.btn-primary, .btn-clear');
+        const supportsPointerMotion = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+        if (supportsPointerMotion) {
+            motionButtons.forEach(button => {
+                button.addEventListener('pointermove', event => {
+                    const bounds = button.getBoundingClientRect();
+                    const xRatio = (event.clientX - bounds.left) / bounds.width;
+                    const yRatio = (event.clientY - bounds.top) / bounds.height;
+
+                    button.style.setProperty('--pointer-x', `${xRatio * 100}%`);
+                    button.style.setProperty('--pointer-y', `${yRatio * 100}%`);
+                    button.style.setProperty('--rotate-x', `${(0.5 - yRatio) * 5}deg`);
+                    button.style.setProperty('--rotate-y', `${(xRatio - 0.5) * 7}deg`);
+                });
+
+                button.addEventListener('pointerleave', () => {
+                    button.style.setProperty('--pointer-x', '50%');
+                    button.style.setProperty('--pointer-y', '50%');
+                    button.style.setProperty('--rotate-x', '0deg');
+                    button.style.setProperty('--rotate-y', '0deg');
+                });
             });
+        }
 
-            window.addEventListener('error', logWindowOnError, true);
-            window.addEventListener('error', logResourceError, true);
-            window.addEventListener('unhandledrejection', logUnhandledRejection);
-            window.addEventListener('message', handleConsoleMessage);
-        })();
-    })();
+        cagrInput.addEventListener('input', calculateCAGR);
+        cagrInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') calculateCAGR();
+        });
 
-</script>
-
+        document.getElementById('cagr-clear').addEventListener('click', () => {
+            cagrInput.value = '';
+            cagrError.classList.remove('show');
+            cagrResult.classList.remove('show');
+            cagrInput.focus();
+        });
+    </script>
+</body>
 </html>
