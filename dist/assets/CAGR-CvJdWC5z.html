@@ -6,7 +6,6 @@ Tag: 投资工具
  -->
 
 
-
 <!DOCTYPE html>
 <!-- ai coding: 扩展单输入框 CAGR 计算器以支持起止年月区间 2026/09/11: 14:11 -->
 <html lang="zh-CN">
@@ -102,10 +101,6 @@ Tag: 投资工具
 
         /* ai coding: 将按钮改为苹果式光泽跟随、空间倾斜与弹簧回弹交互 2026/09/11: 14:33 */
         button {
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
             --pointer-x: 50%;
             --pointer-y: 50%;
             --rotate-x: 0deg;
@@ -124,7 +119,6 @@ Tag: 投资工具
             transform-style: preserve-3d;
             will-change: transform;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
             transition:
                 transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
                 box-shadow 420ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -146,10 +140,7 @@ Tag: 投资工具
 
         .btn-primary {
             width: 100%;
-            padding: 14px;
             margin-top: 10px;
-            color: white;
-            background: #000;
             color: #fff;
             background:
                 radial-gradient(circle 150px at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.24), transparent 60%),
@@ -160,12 +151,6 @@ Tag: 投资工具
                 0 1px 0 rgba(255, 255, 255, 0.16) inset,
                 0 8px 20px rgba(15, 23, 42, 0.18),
                 0 2px 5px rgba(15, 23, 42, 0.12);
-        }
-
-        .btn-primary:hover,
-        .btn-clear:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 18px rgba(102, 126, 234, 0.3);
         }
 
         .btn-primary .button-mark {
@@ -190,12 +175,8 @@ Tag: 投资工具
         }
 
         .btn-clear {
-            width: 120px;
-            height: 40px;
             width: 100%;
             margin-top: 20px;
-            color: #fff;
-            background: #000;
             color: #3a3a3c;
             background:
                 radial-gradient(circle 150px at var(--pointer-x) var(--pointer-y), rgba(255, 255, 255, 0.95), transparent 62%),
@@ -215,7 +196,6 @@ Tag: 投资工具
         }
 
         .btn-clear:hover {
-            background: #667eea;
             border-color: rgba(60, 60, 67, 0.18);
             transform: perspective(700px) rotateX(var(--rotate-x)) rotateY(var(--rotate-y)) translateY(-2px) scale(1.012);
             box-shadow:
@@ -372,7 +352,6 @@ Tag: 投资工具
             </div>
 
             <!-- ai coding: 为计算按钮加入文字层与独立箭头徽章 2026/09/11: 14:24 -->
-            <button class="btn-primary" id="annual-calculate" type="button">计算</button>
             <button class="btn-primary" id="annual-calculate" type="button">
                 <span>计算收益</span>
                 <span class="button-mark" aria-hidden="true">↗</span>
@@ -428,7 +407,6 @@ Tag: 投资工具
             </div>
 
             <!-- ai coding: 为清空按钮加入配套文字层与旋转徽章 2026/09/11: 14:24 -->
-            <button class="btn-clear" id="cagr-clear" type="button">CLEAR</button>
             <button class="btn-clear" id="cagr-clear" type="button">
                 <span>清空输入</span>
                 <span class="button-mark" aria-hidden="true">↺</span>
@@ -505,7 +483,6 @@ Tag: 投资工具
         const cagrTotalValue = document.getElementById('cagr-total-value');
         const cagrDetailInfo = document.getElementById('cagr-detail-info');
 
-        // ai coding: 解析两段、三段及带起止年月的四段式 CAGR 输入 2026/09/11: 14:11
         // ai coding: 解析多种 CAGR 输入并将年月差值固定显示一位小数 2026/09/11: 14:15
         function parseYearMonth(value) {
             const match = value.trim().match(/^(\d{4})(?:[./](\d{1,2}))?$/);
@@ -562,7 +539,7 @@ Tag: 投资工具
                 end,
                 years,
                 inputCount: 4,
-                periodText: `${startDate.label} 至 ${endDate.label}（${durationParts.join(' ') || '0 个月'}，${years.toFixed(4)} 年）`
+                periodText: `${startDate.label} 至 ${endDate.label}（${durationParts.join(' ') || '0 个月'}，${years.toFixed(1)} 年）`
             };
         }
 
