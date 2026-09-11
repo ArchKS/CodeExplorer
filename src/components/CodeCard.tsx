@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileCode, Folder, Download, Image as ImageIcon,Star } from 'lucide-react';
+import { FileCode, Folder, Download, Image as ImageIcon, Star } from 'lucide-react';
 
 interface CodeCardProps {
   name: string;
@@ -13,62 +13,63 @@ interface CodeCardProps {
 }
 
 export const CodeCard: React.FC<CodeCardProps> = ({ name, type, intro, hasPrev, star, onClick, onDownload, onPreviewImage }) => {
-  console.log(star);
+  // ai coding: 将代码卡片改为紧凑横向布局，收拢图标与星标并按需显示操作按钮 2026/09/11: 14:54
   return (
     <div
       onClick={onClick}
-      className="group relative bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer flex flex-col items-center justify-start min-h-[160px] gap-3"
+      className="group relative flex min-h-[88px] cursor-pointer items-start rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-all hover:border-blue-400 hover:shadow-md"
     >
-      {star && star > 0 ? (
-        <div className="absolute top-3 left-3 flex gap-0.5 pointer-events-none">
-          {[...Array(star)].map((_, i) => (
-            <Star key={i} size={14} className="fill-yellow-400 text-yellow-400 drop-shadow-sm" />
-          ))}
-        </div>
-      ):null}
-      <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      <div className="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded bg-white/95 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         {hasPrev && onPreviewImage && (
           <button
             onClick={onPreviewImage}
-            className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+            className="rounded p-1 text-gray-400 transition-colors hover:bg-purple-50 hover:text-purple-600"
             title="Image Preview"
           >
-            <ImageIcon size={18} />
+            <ImageIcon size={15} />
           </button>
         )}
         <button
           onClick={onDownload}
-          className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
+          className="rounded p-1 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-500"
           title="Download"
         >
-          <Download size={18} />
+          <Download size={15} />
         </button>
       </div>
 
-      <div className="pt-4 flex flex-col items-center gap-2">
-        {type === 'file' ? (
-          <FileCode size={40} className="text-blue-500" />
-        ) : (
-          <Folder size={40} className="text-yellow-500" />
-        )}
+      <div className="flex w-full min-w-0 items-start gap-3">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${type === 'file' ? 'bg-blue-50' : 'bg-yellow-50'}`}>
+          {type === 'file' ? (
+            <FileCode size={22} className="text-blue-500" />
+          ) : (
+            <Folder size={22} className="text-yellow-500" />
+          )}
+        </div>
 
-        {intro && (
-          <p className=" text-sm mt-4 font-bold text-gray-800 line-clamp-2 px-3 text-center leading-tight">
-            {intro}
+        <div className="min-w-0 flex-1">
+          {star && star > 0 ? (
+            <div className="mb-1 flex gap-px" aria-label={`${star} stars`}>
+              {[...Array(star)].map((_, i) => (
+                <Star key={i} size={11} className="fill-yellow-400 text-yellow-400" />
+              ))}
+            </div>
+          ) : null}
+          <p className="line-clamp-2 text-sm font-bold leading-snug text-gray-800">
+            {intro || name}
           </p>
-        )}
-
-        <span className="text-[11px] text-gray-500 truncate w-full text-center px-2">
-          {name}
-        </span>
+          {intro && (
+            <span className="mt-1 block truncate text-[11px] text-gray-500">
+              {name}
+            </span>
+          )}
+          {!intro && (
+            <span className="mt-1 block text-[10px] uppercase tracking-wide text-gray-400">
+              {type}
+            </span>
+          )}
+        </div>
       </div>
-
-
-
-      {/* <div className="mt-auto pb-3 text-[10px] uppercase tracking-widest text-gray-400 font-bold">
-        {type}
-      </div> */}
     </div>
   );
 };
-

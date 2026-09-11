@@ -239,52 +239,52 @@ export function App() {
     }
   };
 
+  // ai coding: 压缩首页标题、工具栏、分类栏与卡片网格间距，移除标题说明并增加同屏分类列数 2026/09/11: 14:57
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <main className="p-8">
-        <div className="max-w-7xl mx-auto">
-          <header className="mb-12 text-center">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <Layers className="text-blue-600" size={32} />
-              <h1 className="text-4xl font-black text-gray-900">Code Library</h1>
+      <main className="px-3 py-4 sm:px-5 lg:px-6">
+        <div className="mx-auto max-w-[1600px]">
+          <header className="mb-4 flex items-center">
+            <div className="flex items-center gap-2">
+              <Layers className="text-blue-600" size={24} />
+              <h1 className="m-0 text-2xl font-black leading-none text-gray-900">Code Library</h1>
             </div>
-            <p className="text-lg text-gray-500 font-medium">Automated source code gallery & interactive explorer</p>
           </header>
 
-          <nav className="flex items-center gap-2 mb-10 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm sticky top-4 z-30">
-            <button onClick={() => setHistory([])} className="p-2.5 hover:bg-gray-100 rounded-xl text-gray-600 transition-colors"><Home size={22} /></button>
-            <div className="relative mx-4 hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-              <input type="text" placeholder="Search across all categories..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 w-80 lg:w-[450px] outline-none transition-all" />
+          <nav className="sticky top-2 z-30 mb-5 flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-sm">
+            <button onClick={() => setHistory([])} className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100"><Home size={19} /></button>
+            <div className="relative mx-1 min-w-0 flex-1 sm:max-w-xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+              <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full rounded-lg border border-gray-100 bg-gray-50 py-2 pl-9 pr-3 text-sm outline-none transition-all focus:ring-2 focus:ring-blue-500" />
             </div>
             {history.length > 0 && (
               <>
                 <ChevronRight size={16} className="text-gray-400" />
-                <button onClick={() => setHistory(history.slice(0, -1))} className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-xl text-sm font-bold text-gray-700 transition-colors"><ArrowLeft size={18} />Back</button>
+                <button onClick={() => setHistory(history.slice(0, -1))} className="flex items-center gap-1 rounded-lg px-2 py-2 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100"><ArrowLeft size={16} />Back</button>
               </>
             )}
             <div className="flex-1" />
             {history.length === 0 && (
-              <div className="flex bg-gray-100 p-1.5 rounded-xl mr-4">
+              <div className="hidden rounded-lg bg-gray-100 p-1 sm:flex">
                 {['all', 'file', 'directory'].map(t => (
-                  <button key={t} onClick={() => setFilter(t as any)} className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${filter === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>{t.toUpperCase()}</button>
+                  <button key={t} onClick={() => setFilter(t as any)} className={`rounded-md px-3 py-1.5 text-[11px] font-black transition-all ${filter === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>{t.toUpperCase()}</button>
                 ))}
               </div>
             )}
-            <div className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-tighter">{history.length === 0 ? 'Home' : `Depth ${history.length}`}</div>
+            <div className="hidden rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-tighter text-blue-600 md:block">{history.length === 0 ? 'Home' : `Depth ${history.length}`}</div>
           </nav>
 
-          <div className={`${history.length === 0 ? "space-x-6 flex overflow-y-auto pb-10" : ""}`}>
+          <div className={history.length === 0 ? "grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] items-start gap-4 pb-6" : ""}>
             {Object.entries(groupedItems).map(([tag, items]) => (
-              <section key={tag} className={`${history.length == 0 ? "animate-in fade-in slide-in-from-bottom-4 duration-700 min-w-[300px]" : ""}`}>
+              <section key={tag} className={history.length === 0 ? "animate-in fade-in slide-in-from-bottom-4 duration-700" : ""}>
                 {history.length === 0 && (
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="h-8 w-1.5 bg-blue-600 rounded-full"></div>
-                    <h2 className="text-2xl font-black text-gray-800 tracking-tight">{tag}</h2>
-                    <span className="px-2.5 py-0.5 bg-gray-200 text-gray-600 text-xs font-bold rounded-md uppercase">{items.length}</span>
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="h-5 w-1 rounded-full bg-blue-600"></div>
+                    <h2 className="m-0 text-base font-black tracking-tight text-gray-800">{tag}</h2>
+                    <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-600">{items.length}</span>
                   </div>
                 )}
-                <div className={history.length == 0 ? "max-w-[270px] space-y-8" : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"}>
+                <div className={history.length === 0 ? "space-y-3" : "grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"}>
                   {items.map((item, index) => (
                     <CodeCard
                       key={`${item.path}-${index}`}
@@ -312,4 +312,3 @@ export function App() {
     </div>
   );
 }
-
